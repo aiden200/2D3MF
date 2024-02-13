@@ -2,6 +2,8 @@
 import argparse
 import os
 import sys
+import random
+import shutil
 
 sys.path.append(os.getcwd())
 
@@ -29,13 +31,71 @@ def gen_split(root: str):
         for i in range(int(total_num * 0.9), total_num):
             f.write(videos[i][:-4] + "\n")
 
+def find_file_by_prefix(directory, prefix):
+    """
+    Finds the first file in the specified directory that starts with the given prefix.
+    
+    Args:
+    - directory (str): The path to the directory.
+    - prefix (str): The prefix to search for.
+    
+    Returns:
+    - str: The path to the first file found with the specified prefix, or None if no such file is found.
+    """
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.startswith(prefix):
+                return os.path.join(root, file)
+    return None
+
+def process_youtube_faces(root: str)->str:
+    original_sequences_root = f"{root}/original_sequences/youtube/c23/videos/"
+    fake_sequences_root = f"{root}/manipulated_sequences/"
+    new_sequences = f"new_yt_sequences/downloaded/"
+    
+    filenames = []
+    for root, dirs, files in os.walk(original_sequences_root):
+        for file in files:
+            filenames.append(os.path.join(root, file))
+    print(f"Processing {len(filenames)} videos")
+    
+    deepfake_techniques = []
+    for root, dirs, files in os.walk(fake_sequences_root):
+        for dir in dirs:
+            deepfake_techniques.append(os.path.join(root, dir))
+            
+    random.seed(22)
+    random.shuffle(filenames) #mixing up the original videos
+    
+    real_videos = filenames[:len(filenames)//2]
+    fake_videos = filenames[len(filenames)//2:]
+    
+    for vid_name in real_videos:
+        src = f"{original_sequences_root}{vid_name}"
+        dst = f"{new_sequences}{vid_name[:-4]}-0.mp4"
+        shutil.copyfile(src, dst)
+        
+    for vid_name in fake_videos:
+        technique = random.choice(deepfake_techniques)
+        vid_name = find_file_by_prefix(f"{fake_sequences_root}{technique}/c23/videos/", vid_name)
+        src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
+        dst = f"{new_sequences}{vid_name[:-4]}-1.mp4"
+        shutil.copyfile(src, dst)
+        
+    
+    return new_sequences 
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", help="Root directory of CelebV-HQ")
+parser.add_argument("--yt", help="Root directory of the yt videos")
 args = parser.parse_args()
 
 if __name__ == '__main__':
     data_root = args.data_dir
+    yt_root = args.yt
+    data_root = process_youtube_faces(yt_root)
+    exit(0)
     crop_face(data_root)
 
     if not os.path.exists(os.path.join(data_root, "train.txt")) or \

@@ -20,13 +20,13 @@ class CelebvHqBase(LightningDataModule, ABC):
         super().__init__()
         self.data_root = data_root
         self.split = split
-        assert task in ("appearance", "action")
+        assert task in ("appearance", "action", "deepfake")
         self.task = task
         self.take_num = take_num
 
         self.name_list = list(
             filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}.txt")).split("\n")))
-        self.metadata = read_json(os.path.join(data_root, "celebvhq_info.json"))
+        # self.metadata = read_json(os.path.join(data_root, "celebvhq_info.json"))
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
@@ -60,7 +60,8 @@ class CelebvHq(CelebvHqBase):
         self.temporal_sample_rate = temporal_sample_rate
 
     def __getitem__(self, index: int):
-        y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
 
         probe = ffmpeg.probe(video_path)["streams"][0]
@@ -123,7 +124,8 @@ class CelebvHqFeatures(CelebvHqBase):
         else:
             raise ValueError(self.temporal_reduction)
 
-        y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
+
 
         return x, torch.tensor(y, dtype=torch.long).bool()
 

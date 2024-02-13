@@ -29,6 +29,8 @@ def train_celebvhq(args, config):
         num_classes = 40
     elif task == "action":
         num_classes = 35
+    elif task == "deepfake": #deepfake classification
+        num_classes = 1 # real or fake. Will this be 1?
     else:
         raise ValueError(f"Unknown task {task}")
 
