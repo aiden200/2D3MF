@@ -1,0 +1,6 @@
+INFO 2024-02-12 21:32:37 FaceDetModelLoader.py: 20] Start to analyze the face detection model, model path: util/face_sdk/models, model category: face_detection，model name: face_detection_1.0
+INFO 2024-02-12 21:32:37 BaseModelLoader.py: 38] Successfully parsed the model configuration file meta.json!
+INFO 2024-02-12 21:32:42 FaceDetModelLoader.py: 20] Start to analyze the face detection model, model path: util/face_sdk/models, model category: face_detection，model name: face_detection_1.0
+INFO 2024-02-12 21:32:42 BaseModelLoader.py: 38] Successfully parsed the model configuration file meta.json!
+INFO 2024-02-12 21:32:42 FaceDetModelLoader.py: 20] Start to analyze the face detection model, model path: util/face_sdk/models, model category: face_detection，model name: face_detection_1.0
+INFO 2024-02-12 21:32:42 BaseModelLoader.py: 38] Successfully parsed the model configuration file meta.json!
