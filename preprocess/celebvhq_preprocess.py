@@ -45,24 +45,60 @@ def find_file_by_prefix(directory, prefix):
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.startswith(prefix):
-                return os.path.join(root, file)
+                return file
     return None
+
+
+def reset_directory(directory):
+    """
+    Clears all contents of a specified directory without removing the directory itself.
+
+    Args:
+    - directory (str): The path to the directory to reset.
+    """
+    # Check if the directory exists
+    if not os.path.exists(directory):
+        print(f"Directory {directory} does not exist.")
+        return
+
+    # Iterate over all items in the directory
+    for item in os.listdir(directory):
+        item_path = os.path.join(directory, item)
+        try:
+            # If item is a directory, remove it and all its contents
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            # If item is a file, remove it
+            else:
+                os.remove(item_path)
+        except Exception as e:
+            print(f"Error while deleting {item_path}: {e}")
 
 def process_youtube_faces(root: str)->str:
     original_sequences_root = f"{root}/original_sequences/youtube/c23/videos/"
     fake_sequences_root = f"{root}/manipulated_sequences/"
-    new_sequences = f"new_yt_sequences/downloaded/"
+    new_sequences = f"new_yt_sequences/"
+    
+    if not os.path.exists(new_sequences):
+        os.mkdir(new_sequences)
+        os.mkdir(os.path.join(new_sequences, "downloaded/"))
+    else:
+        reset_directory(f'{new_sequences}/downloaded/')
+        
     
     filenames = []
     for root, dirs, files in os.walk(original_sequences_root):
         for file in files:
-            filenames.append(os.path.join(root, file))
+            filenames.append(file)
     print(f"Processing {len(filenames)} videos")
     
     deepfake_techniques = []
     for root, dirs, files in os.walk(fake_sequences_root):
         for dir in dirs:
-            deepfake_techniques.append(os.path.join(root, dir))
+            if dir != "DeepFakeDetection":
+                deepfake_techniques.append(dir)
+        break
+    print(deepfake_techniques)
             
     random.seed(22)
     random.shuffle(filenames) #mixing up the original videos
@@ -72,14 +108,14 @@ def process_youtube_faces(root: str)->str:
     
     for vid_name in real_videos:
         src = f"{original_sequences_root}{vid_name}"
-        dst = f"{new_sequences}{vid_name[:-4]}-0.mp4"
+        dst = f"{new_sequences}downloaded/{vid_name[:-4]}-0.mp4"
         shutil.copyfile(src, dst)
         
     for vid_name in fake_videos:
         technique = random.choice(deepfake_techniques)
-        vid_name = find_file_by_prefix(f"{fake_sequences_root}{technique}/c23/videos/", vid_name)
+        vid_name = find_file_by_prefix(f"{fake_sequences_root}{technique}/c23/videos/", vid_name[:-4])
         src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
-        dst = f"{new_sequences}{vid_name[:-4]}-1.mp4"
+        dst = f"{new_sequences}downloaded/{vid_name[:-4]}-1.mp4"
         shutil.copyfile(src, dst)
         
     
