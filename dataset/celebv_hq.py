@@ -61,7 +61,7 @@ class CelebvHq(CelebvHqBase):
 
     def __getitem__(self, index: int):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
-        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
+        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
 
         probe = ffmpeg.probe(video_path)["streams"][0]
@@ -89,7 +89,10 @@ class CelebvHq(CelebvHqBase):
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
         assert video.shape[1] == self.clip_frames, video_path
-        return video, torch.tensor(y, dtype=torch.long).bool()
+        # print(y)
+        # print(video.shape, torch.tensor([y], dtype=torch.float).bool().shape)
+        # return video, torch.tensor(y, dtype=torch.long).bool()
+        return video, torch.tensor([y], dtype=torch.float).bool()
 
 
 # For linear probing

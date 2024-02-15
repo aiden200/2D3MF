@@ -6,6 +6,7 @@ from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
+from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
@@ -31,7 +32,13 @@ class Classifier(LightningModule):
 
         config = resolve_config(backbone)
 
-        self.fc = Linear(config.encoder_embed_dim, num_classes)
+
+        hidden_layers = 256
+        self.layer_norm = LayerNorm(config.encoder_embed_dim)
+        self.fc = Linear(config.encoder_embed_dim, hidden_layers)
+        self.layer_norm2 = LayerNorm(hidden_layers)
+        self.fc2 = Linear(hidden_layers, num_classes)
+
         self.learning_rate = learning_rate
         self.distributed = distributed
         self.task = task
@@ -57,7 +64,15 @@ class Classifier(LightningModule):
             feat = self.model.extract_features(x, True)
         else:
             feat = x
-        return self.fc(feat)
+        
+        feat = self.layer_norm(feat)
+        feat = LeakyReLU()(feat)
+        feat = self.fc(feat)
+        feat = LeakyReLU()(feat)
+        # feat = self.layer_norm2(feat)
+        feat = self.fc2(feat)
+
+        return feat
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x, y = batch
@@ -65,10 +80,15 @@ class Classifier(LightningModule):
         if self.task == "multilabel":
             y_hat = y_hat.flatten()
             y = y.flatten()
+        # print(y_hat, 1 - y.float())
+        print(y_hat)
         loss = self.loss_fn(y_hat, y.float())
-        prob = y_hat.sigmoid()
-        acc = self.acc_fn(prob, y)
-        auc = self.auc_fn(prob, y)
+        print(loss)
+        prob = y_hat
+        # prob = y_hat[y_hat < 0.5]
+
+        acc = self.acc_fn(prob, y.float())
+        auc = self.auc_fn(prob, y.float())
         return {"loss": loss, "acc": acc, "auc": auc}
 
     def training_step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]] = None, batch_idx: Optional[int] = None,

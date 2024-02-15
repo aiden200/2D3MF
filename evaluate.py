@@ -38,7 +38,7 @@ def train_celebvhq(args, config):
         backbone_config = resolve_config(config["backbone"])
 
         model = Classifier(
-            num_classes, config["backbone"], True, args.marlin_ckpt, "multilabel", config["learning_rate"],
+            num_classes, config["backbone"], True, args.marlin_ckpt, "binary", config["learning_rate"], #changed this to binary
             args.n_gpus > 1,
         )
 
@@ -79,10 +79,12 @@ def train_celebvhq(args, config):
     except ValueError:
         precision = args.precision
 
+    print(f"ckpt/{config['model_name']}")
     ckpt_callback = ModelCheckpoint(dirpath=f"ckpt/{config['model_name']}", save_last=True,
         filename=ckpt_filename,
         monitor=ckpt_monitor,
-        mode="max")
+        mode="max") #,
+        # save_top_k=-1)
 
     trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=accelerator, benchmark=True,
         logger=True, precision=precision, max_epochs=max_epochs,
@@ -91,6 +93,7 @@ def train_celebvhq(args, config):
 
     trainer.fit(model, dm)
 
+    print(f"\n\n {ckpt_callback.best_model_path}")
     return ckpt_callback.best_model_path, dm
 
 
@@ -128,6 +131,7 @@ def evaluate(args):
 
     if dataset_name == "celebvhq":
         ckpt, dm = train_celebvhq(args, config)
+        # print(f"ckpt: {ckpt}, dm: {dm}")
         evaluate_celebvhq(args, ckpt, dm)
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
@@ -143,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument("--precision", type=str, default="32")
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--epochs", type=int, default=2000, help="Max epochs to train.")
+    parser.add_argument("--epochs", type=int, default=200, help="Max epochs to train.")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
     parser.add_argument("--skip_train", action="store_true", default=False,
         help="Skip training and evaluate only.")

@@ -77,7 +77,7 @@ def reset_directory(directory):
 def process_youtube_faces(root: str)->str:
     original_sequences_root = f"{root}/original_sequences/youtube/c23/videos/"
     fake_sequences_root = f"{root}/manipulated_sequences/"
-    new_sequences = f"new_yt_sequences/"
+    new_sequences = f"yt_ft/"
     
     if not os.path.exists(new_sequences):
         os.mkdir(new_sequences)
@@ -89,13 +89,15 @@ def process_youtube_faces(root: str)->str:
     filenames = []
     for root, dirs, files in os.walk(original_sequences_root):
         for file in files:
-            filenames.append(file)
+            if file[-4:] == ".mp4":
+                filenames.append(file)
     print(f"Processing {len(filenames)} videos")
     
     deepfake_techniques = []
+    ignore_techniques = ["DeepFakeDetection"]
     for root, dirs, files in os.walk(fake_sequences_root):
         for dir in dirs:
-            if dir != "DeepFakeDetection":
+            if dir not in ignore_techniques:
                 deepfake_techniques.append(dir)
         break
     print(deepfake_techniques)
@@ -110,13 +112,18 @@ def process_youtube_faces(root: str)->str:
         src = f"{original_sequences_root}{vid_name}"
         dst = f"{new_sequences}downloaded/{vid_name[:-4]}-0.mp4"
         shutil.copyfile(src, dst)
-        
+    
+    miss_count = 0
     for vid_name in fake_videos:
         technique = random.choice(deepfake_techniques)
         vid_name = find_file_by_prefix(f"{fake_sequences_root}{technique}/c23/videos/", vid_name[:-4])
-        src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
-        dst = f"{new_sequences}downloaded/{vid_name[:-4]}-1.mp4"
-        shutil.copyfile(src, dst)
+        if vid_name:
+            src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
+            dst = f"{new_sequences}downloaded/{vid_name[:-4]}-1.mp4"
+            shutil.copyfile(src, dst)
+        else:
+            miss_count += 1
+    print(f"Missed {miss_count} videos")
         
     
     return new_sequences 
@@ -131,7 +138,6 @@ if __name__ == '__main__':
     data_root = args.data_dir
     yt_root = args.yt
     data_root = process_youtube_faces(yt_root)
-    exit(0)
     crop_face(data_root)
 
     if not os.path.exists(os.path.join(data_root, "train.txt")) or \
