@@ -268,6 +268,17 @@ python evaluate.py \
     --data_path /path/to/CelebV-HQ 
     --num_workers 4 
     --batch_size 16
+
+
+python evaluate.py \
+    --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml \
+    --data_path new_yt_sequences \
+    --num_workers 4 \
+    --batch_size 8 \
+    --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
+
+python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml     --data_path new_yt_sequences     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500 --skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt
+
 ```
 
 </details>

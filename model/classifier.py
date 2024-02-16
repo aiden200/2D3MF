@@ -2,11 +2,14 @@ from typing import Optional, Union, Sequence, Dict, Literal, Any
 
 from pytorch_lightning import LightningModule
 from torch import Tensor
-from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss
+from torch.nn import CrossEntropyLoss, Linear, Identity, BCELoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
+from torchmetrics.classification import BinaryAccuracy
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
+
+import time
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
@@ -33,7 +36,7 @@ class Classifier(LightningModule):
         config = resolve_config(backbone)
 
 
-        hidden_layers = 256
+        hidden_layers = 128
         self.layer_norm = LayerNorm(config.encoder_embed_dim)
         self.fc = Linear(config.encoder_embed_dim, hidden_layers)
         self.layer_norm2 = LayerNorm(hidden_layers)
@@ -43,15 +46,15 @@ class Classifier(LightningModule):
         self.distributed = distributed
         self.task = task
         if task in "binary":
-            self.loss_fn = BCEWithLogitsLoss()
-            self.acc_fn = Accuracy(task=task, num_classes=1)
+            self.loss_fn = BCELoss()
+            self.acc_fn = BinaryAccuracy(task=task, num_classes=1)
             self.auc_fn = AUROC(task=task, num_classes=1)
         elif task == "multiclass":
             self.loss_fn = CrossEntropyLoss()
             self.acc_fn = Accuracy(task=task, num_classes=num_classes)
             self.auc_fn = AUROC(task=task, num_classes=num_classes)
         elif task == "multilabel":
-            self.loss_fn = BCEWithLogitsLoss()
+            self.loss_fn = BCELoss()
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
 
@@ -66,13 +69,13 @@ class Classifier(LightningModule):
             feat = x
         
         feat = self.layer_norm(feat)
-        feat = LeakyReLU()(feat)
+        # feat = LeakyReLU()(feat)
         feat = self.fc(feat)
-        feat = LeakyReLU()(feat)
+        feat = ReLU()(feat)
         # feat = self.layer_norm2(feat)
         feat = self.fc2(feat)
 
-        return feat
+        return feat.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x, y = batch
@@ -81,11 +84,13 @@ class Classifier(LightningModule):
             y_hat = y_hat.flatten()
             y = y.flatten()
         # print(y_hat, 1 - y.float())
-        print(y_hat)
+        # print(y_hat, y.float())
         loss = self.loss_fn(y_hat, y.float())
-        print(loss)
+        # print(loss)
         prob = y_hat
         # prob = y_hat[y_hat < 0.5]
+
+        # time.sleep(2)
 
         acc = self.acc_fn(prob, y.float())
         auc = self.auc_fn(prob, y.float())

@@ -53,7 +53,7 @@ def train_celebvhq(args, config):
     else:
         model = Classifier(
             num_classes, config["backbone"], False,
-            None, "multilabel", config["learning_rate"], args.n_gpus > 1,
+            None, "binary", config["learning_rate"], args.n_gpus > 1,
         )
 
         dm = CelebvHqDataModule(
@@ -109,13 +109,19 @@ def evaluate_celebvhq(args, ckpt, dm):
     # collect predictions
     preds = trainer.predict(model, dm.test_dataloader())
     preds = torch.cat(preds)
-
+    print(preds)
     # collect ground truth
     ys = torch.zeros_like(preds, dtype=torch.bool)
-    for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
-        ys[i * args.batch_size: (i + 1) * args.batch_size] = y
 
-    preds = preds.sigmoid()
+    for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+        # print(ys, y)
+        ys[i * args.batch_size: (i + 1) * args.batch_size] = y
+    # print(y.shape, ys.shape)
+    # print(torch.eq(y.float(), (preds > 0.5)))
+
+    # print(ys)
+    # preds = preds.sigmoid()
+    # print((preds > 0.5))
     acc = ((preds > 0.5) == ys).float().mean()
     auc = model.auc_fn(preds, ys)
     results = {

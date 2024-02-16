@@ -130,7 +130,7 @@ class CelebvHqFeatures(CelebvHqBase):
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
 
 
-        return x, torch.tensor(y, dtype=torch.long).bool()
+        return x, torch.tensor([y], dtype=torch.float).bool()
 
 
 class CelebvHqDataModule(LightningDataModule):
