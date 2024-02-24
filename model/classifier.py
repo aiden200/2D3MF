@@ -6,7 +6,7 @@ from torch.nn import CrossEntropyLoss, Linear, Identity, BCELoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
-from torchmetrics.classification import BinaryAccuracy
+from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 
 import time
@@ -46,9 +46,10 @@ class Classifier(LightningModule):
         self.distributed = distributed
         self.task = task
         if task in "binary":
+            print("Binary Task")
             self.loss_fn = BCELoss()
-            self.acc_fn = BinaryAccuracy(task=task, num_classes=1)
-            self.auc_fn = AUROC(task=task, num_classes=1)
+            self.acc_fn = BinaryAccuracy()
+            self.auc_fn = BinaryAUROC()
         elif task == "multiclass":
             self.loss_fn = CrossEntropyLoss()
             self.acc_fn = Accuracy(task=task, num_classes=num_classes)

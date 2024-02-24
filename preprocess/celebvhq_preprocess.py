@@ -74,10 +74,10 @@ def reset_directory(directory):
         except Exception as e:
             print(f"Error while deleting {item_path}: {e}")
 
-def process_youtube_faces(root: str)->str:
+def process_youtube_faces(root: str, mixed: bool = False)->str:
     original_sequences_root = f"{root}/original_sequences/youtube/c23/videos/"
     fake_sequences_root = f"{root}/manipulated_sequences/"
-    new_sequences = f"yt_ft/"
+    new_sequences = f"yt_mixed/"
     
     if not os.path.exists(new_sequences):
         os.mkdir(new_sequences)
@@ -107,11 +107,20 @@ def process_youtube_faces(root: str)->str:
     
     real_videos = filenames[:len(filenames)//2]
     fake_videos = filenames[len(filenames)//2:]
+    if mixed:
+        real_videos = filenames
+        fake_videos = filenames        
     
+    vid_count = 0
     for vid_name in real_videos:
         src = f"{original_sequences_root}{vid_name}"
         dst = f"{new_sequences}downloaded/{vid_name[:-4]}-0.mp4"
+        vid_count += 1
         shutil.copyfile(src, dst)
+    
+    print(f"Real videos: {vid_count}")
+
+    vid_count = 0
     
     miss_count = 0
     for vid_name in fake_videos:
@@ -120,11 +129,12 @@ def process_youtube_faces(root: str)->str:
         if vid_name:
             src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
             dst = f"{new_sequences}downloaded/{vid_name[:-4]}-1.mp4"
+            vid_count += 1
             shutil.copyfile(src, dst)
         else:
             miss_count += 1
     print(f"Missed {miss_count} videos")
-        
+    print(f"Fake videos: {vid_count}")
     
     return new_sequences 
 
@@ -137,7 +147,7 @@ args = parser.parse_args()
 if __name__ == '__main__':
     data_root = args.data_dir
     yt_root = args.yt
-    data_root = process_youtube_faces(yt_root)
+    data_root = process_youtube_faces(yt_root, True)
     crop_face(data_root)
 
     if not os.path.exists(os.path.join(data_root, "train.txt")) or \
