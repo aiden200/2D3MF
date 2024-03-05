@@ -46,7 +46,6 @@ class Classifier(LightningModule):
         self.distributed = distributed
         self.task = task
         if task in "binary":
-            print("Binary Task")
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
@@ -79,7 +78,7 @@ class Classifier(LightningModule):
         return feat.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
-        x, y = batch
+        x, y, z = batch # video frames, label, audio mfccs
         y_hat = self(x)
         if self.task == "multilabel":
             y_hat = y_hat.flatten()
