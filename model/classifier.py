@@ -102,9 +102,6 @@ class Classifier(LightningModule):
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
 
-    def extract_audio_features(x_audio):
-        pass
-
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
         return cls(model, learning_rate, distributed)
@@ -117,12 +114,9 @@ class Classifier(LightningModule):
             feat = x_vid
         # Audio branch embeddings
         x_audio = self.audio_model(x_a)
-        print("shape of embedding:", feat_a.shape)
         
-        x_audio = self.extract_audio_features(x_audio)
         x_vid = self.conv1d_0(x_vid) 
         x_vid = self.conv1d_1(x_vid)
-        #x_audio = 
 
         h_av = self.av1(x_vid, x_audio)
         h_va = self.va1(x_audio, x_vid)
@@ -140,7 +134,6 @@ class Classifier(LightningModule):
         video_pooled = x_visual.mean([-1])
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
         x1 = self.classifier_1(x)
-        #x_audio = 
         return x1.sigmoid()
 
 
