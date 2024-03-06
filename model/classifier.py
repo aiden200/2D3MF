@@ -2,6 +2,8 @@ from typing import Optional, Union, Sequence, Dict, Literal, Any
 
 from pytorch_lightning import LightningModule
 from torch import Tensor
+import torch
+import torch.nn as nn
 from torch.nn import CrossEntropyLoss, Linear, Identity, BCELoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -13,7 +15,6 @@ import time
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
-
 
 class Classifier(LightningModule):
 
@@ -33,6 +34,7 @@ class Classifier(LightningModule):
         else:
             self.model = None
 
+        self.audio_model = AudioCNNPool()
         config = resolve_config(backbone)
 
 
@@ -62,35 +64,36 @@ class Classifier(LightningModule):
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
         return cls(model, learning_rate, distributed)
 
-    def forward(self, x):
+    def forward(self, x_v, x_a):
         if self.model is not None:
-            feat = self.model.extract_features(x, True)
+            feat_v = self.model.extract_features(x_v, True)
         else:
-            feat = x
+            feat_v = x_v
         
-        feat = self.layer_norm(feat)
-        # feat = LeakyReLU()(feat)
-        feat = self.fc(feat)
-        feat = ReLU()(feat)
-        # feat = self.layer_norm2(feat)
-        feat = self.fc2(feat)
+        # Video branch embeddings
+        feat_v = self.layer_norm(feat_v)
+        feat_v = self.fc(feat_v)
+        feat_v = ReLU()(feat_v)
+        feat_v = self.fc2(feat_v)
+        # Audio branch embeddings
+        feat_a = self.audio_model(x_a)
+        print("shape of embedding:", feat_a.shape)
 
-        return feat.sigmoid()
+        # Transformer fusion
+
+        return feat_v.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
-        x, y, z = batch # video frames, label, audio mfccs
-        y_hat = self(x)
+        x_v, y, x_a = batch # video frames, label, audio mfccs
+        
+        y_hat = self(x_v, x_a)
+        
         if self.task == "multilabel":
             y_hat = y_hat.flatten()
             y = y.flatten()
-        # print(y_hat, 1 - y.float())
-        # print(y_hat, y.float())
+        
         loss = self.loss_fn(y_hat, y.float())
-        # print(loss)
         prob = y_hat
-        # prob = y_hat[y_hat < 0.5]
-
-        # time.sleep(2)
 
         acc = self.acc_fn(prob, y.float())
         auc = self.auc_fn(prob, y.float())
@@ -124,3 +127,53 @@ class Classifier(LightningModule):
                 "monitor": "train_loss"
             }
         }
+
+
+def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
+    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
+                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
+
+# Audio CNN (audio embedding)
+class AudioCNNPool(nn.Module):
+
+    def __init__(self, num_classes=8):
+        super(AudioCNNPool, self).__init__()
+
+        input_channels = 10
+        self.conv1d_0 = conv1d_block_audio(input_channels, 64)
+        self.conv1d_1 = conv1d_block_audio(64, 128)
+        self.conv1d_2 = conv1d_block_audio(128, 256)
+        self.conv1d_3 = conv1d_block_audio(256, 128)
+        
+        self.classifier_1 = nn.Sequential(
+                nn.Linear(128, num_classes),
+            )
+            
+    def forward(self, x):
+        x = self.forward_stage1(x)
+        x = self.forward_stage2(x)
+        x = self.forward_classifier(x)
+        return x
+
+    def forward_stage1(self,x):            
+        x = self.conv1d_0(x)
+        x = self.conv1d_1(x)
+        return x
+    
+    def forward_stage2(self,x):
+        x = self.conv1d_2(x)
+        x = self.conv1d_3(x)   
+        return x
+    
+    def forward_classifier(self, x):   
+        x = x.mean([-1]) #pooling accross temporal dimension
+        x1 = self.classifier_1(x)
+        return x1
+
+#from torchsummary import summary
+#model = AudioCNNPool().to('cuda:0')
+#dummy_input = torch.randn((1, 10, 87)).to('cuda:0')
+#xx = model(dummy_input)
+#print("output shape", xx.shape)
+#summary(model, (10, 87))
+
