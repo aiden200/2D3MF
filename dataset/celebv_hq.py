@@ -13,29 +13,7 @@ from torch.utils.data import DataLoader
 from marlin_pytorch.util import read_video, padding_video
 from util.misc import sample_indexes, read_text, read_json
 
-import librosa
-from scipy.signal import resample
-
-def extract_number(filename):
-    file_str = filename.split("_")[0]
-    file_str = file_str.split("-")[0]
-    return file_str
-
-def audio_load(file_path):
-    '''
-    Loads and resample audio if not at 44100
-    '''
-    target_sr = 44100
-    try:
-        audio_data, sr = librosa.load(file_path, sr=None, mono=True)
-        # check sampling rate is 44100Hz
-        if sr != target_sr:
-            # resample audio to 44100 (easier to work with to match with video frames)
-            num_samples = len(audio_data)
-            audio_data = resample(audio_data, int(num_samples * target_sr / sr))
-        return audio_data, target_sr  # resampled audio data, target sampling rate
-    except Exception as e:
-        print(f"Error: {e}")
+from dataset.utils import *
 
 class CelebvHqBase(LightningDataModule, ABC):
 
@@ -111,10 +89,9 @@ class CelebvHq(CelebvHqBase):
             frames.append(frame["data"])
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
+        
         assert video.shape[1] == self.clip_frames, video_path
-        # print(y)
-        # print(video.shape, torch.tensor([y], dtype=torch.float).bool().shape)
-        # return video, torch.tensor(y, dtype=torch.long).bool()
+        
         audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
         start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
         audio = audio[start_audio_idx:start_audio_idx+sr]
