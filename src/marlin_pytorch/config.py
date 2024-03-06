@@ -24,6 +24,8 @@ class MarlinConfig:
     norm_layer: str
     init_values: float
     tubelet_size: int
+    ir_layers: str
+    num_heads: int
 
 
 class Downloadable(ABC):
@@ -64,6 +66,8 @@ class SharedConfig(MarlinConfig):
     norm_layer = "LayerNorm"
     init_values = 0.
     tubelet_size = 2
+    ir_layers = "conv"
+    num_heads= 1
 
 
 @register_model("marlin_vit_base_ytf")
@@ -77,6 +81,9 @@ class MarlinVitBaseConfig(NoArgInit, SharedConfig, Downloadable):
     decoder_num_heads = 6
     full_model_url = "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_base_ytf.full.pt"
     encoder_model_url = "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_base_ytf.encoder.pt"
+    ir_layers = "conv"
+    num_heads= 1
+
 
 
 @register_model("marlin_vit_small_ytf")
@@ -92,7 +99,8 @@ class MarlinVitSmallConfig(NoArgInit, SharedConfig, Downloadable):
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_small_ytf.full.pt"
     encoder_model_url = \
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_small_ytf.encoder.pt"
-
+    ir_layers = "conv"
+    num_heads= 1
 
 @register_model("marlin_vit_large_ytf")
 @Singleton
@@ -107,7 +115,8 @@ class MarlinVitLargeConfig(NoArgInit, SharedConfig, Downloadable):
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_large_ytf.full.pt"
     encoder_model_url = \
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_large_ytf.encoder.pt"
-
+    ir_layers = "conv"
+    num_heads= 1
 
 def register_model_from_yaml(name: str, path: str) -> None:
     config = read_yaml(path)
@@ -128,7 +137,9 @@ def register_model_from_yaml(name: str, path: str) -> None:
         attn_drop_rate=config["attn_drop_rate"],
         norm_layer=config["norm_layer"],
         init_values=config["init_values"],
-        tubelet_size=config["tubelet_size"]
+        tubelet_size=config["tubelet_size"],
+        ir_layers = config["ir_layers"],
+        num_heads=config["num_heads"]
     )
     _configs[name] = marlin_config
 
