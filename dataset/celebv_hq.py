@@ -13,6 +13,29 @@ from torch.utils.data import DataLoader
 from marlin_pytorch.util import read_video, padding_video
 from util.misc import sample_indexes, read_text, read_json
 
+import librosa
+from scipy.signal import resample
+
+def extract_number(filename):
+    file_str = filename.split("_")[0]
+    file_str = file_str.split("-")[0]
+    return file_str
+
+def audio_load(file_path):
+    '''
+    Loads and resample audio if not at 44100
+    '''
+    target_sr = 44100
+    try:
+        audio_data, sr = librosa.load(file_path, sr=None, mono=True)
+        # check sampling rate is 44100Hz
+        if sr != target_sr:
+            # resample audio to 44100 (easier to work with to match with video frames)
+            num_samples = len(audio_data)
+            audio_data = resample(audio_data, int(num_samples * target_sr / sr))
+        return audio_data, target_sr  # resampled audio data, target sampling rate
+    except Exception as e:
+        print(f"Error: {e}")
 
 class CelebvHqBase(LightningDataModule, ABC):
 
@@ -63,17 +86,17 @@ class CelebvHq(CelebvHqBase):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
-
+        audio_path = os.path.join(self.data_root, "audio", extract_number(self.name_list[index]) + ".mp3")
         probe = ffmpeg.probe(video_path)["streams"][0]
         n_frames = int(probe["nb_frames"])
 
-        if n_frames <= self.clip_frames:
+        if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
             video = read_video(video_path, channel_first=True).video / 255
             # pad frames to 16
             video = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
             video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
             return video, torch.tensor(y, dtype=torch.long)
-        elif n_frames <= self.clip_frames * self.temporal_sample_rate:
+        elif n_frames <= self.clip_frames * self.temporal_sample_rate: # not needed (as long as our videos are > 1sec)
             # reset a lower temporal sample rate
             sample_rate = n_frames // self.clip_frames
         else:
@@ -92,7 +115,15 @@ class CelebvHq(CelebvHqBase):
         # print(y)
         # print(video.shape, torch.tensor([y], dtype=torch.float).bool().shape)
         # return video, torch.tensor(y, dtype=torch.long).bool()
-        return video, torch.tensor([y], dtype=torch.float).bool()
+        audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
+        start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
+        audio = audio[start_audio_idx:start_audio_idx+sr]
+        audio_mfccs = self.get_mfccs(audio, sr)
+        return video, torch.tensor([y], dtype=torch.float).bool(), torch.tensor(audio_mfccs) # here we need to return the audio features too
+
+    def get_mfccs(self, y, sr):
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)
+        return mfcc
 
 
 # For linear probing
