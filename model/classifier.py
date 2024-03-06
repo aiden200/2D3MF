@@ -10,7 +10,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
-from .transformer_blocks import AttentionBlock
+from model.transformer_blocks import AttentionBlock
+from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool
 
 import torch.nn as nn
 import time
@@ -25,6 +26,9 @@ def conv1d_block(in_channels, out_channels, kernel_size=3, stride=1, padding='sa
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding=padding),nn.BatchNorm1d(out_channels),
                                    nn.ReLU(inplace=True)) 
 
+def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
+    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
+                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
 class Classifier(LightningModule):
 
@@ -46,25 +50,24 @@ class Classifier(LightningModule):
         else:
             self.model = None
 
-        self.audio_model = AudioCNNPool()
         config = resolve_config(backbone)
-
 
         self.hidden_layers = 128
         self.input_dim_audio = 128 # placeholder
+
+
+        self.audio_model_cnn = AudioCNNPool(num_classes=1, h_dim=self.hidden_layers)
+        self.video_model_cnn = VideoCnnPool(num_classes=1, 
+                                            input_dim=config.encoder_embed_dim, 
+                                            h_dim=self.hidden_layers)
+
 
         if ir_layers == "fc":
             self.layer_norm = LayerNorm(config.encoder_embed_dim)
             self.fc = Linear(config.encoder_embed_dim, self.hidden_layers)
             self.layer_norm2 = LayerNorm(self.hidden_layers)
             # self.fc2 = Linear(self.hidden_layers, num_classes)
-        elif ir_layers == "conv":
-            self.conv1d_0 = conv1d_block(config.encoder_embed_dim, 64) #might be too big
-            self.conv1d_1 = conv1d_block(64, 64)
-            self.conv1d_2 = conv1d_block(64, 128)
-            self.conv1d_3 = conv1d_block(128, self.hidden_layers)
-        else:
-            self.hidden_layers = config.encoder_embed_dim #768
+
 
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers, 
@@ -77,15 +80,10 @@ class Classifier(LightningModule):
             out_dim=self.hidden_layers, 
             num_heads=num_heads)   
         
-
-        self.hidden_layers_2 = 128
-
-        self.classifier = nn.Sequential(
-            nn.Linear(self.hidden_layers_2, num_classes), # depfake so 1
-        )
-
-
-
+        self.classifier_1 = nn.Sequential(
+                    nn.Linear(self.hidden_layers*2, num_classes), # depfake so 1
+                )
+        
         self.learning_rate = learning_rate
         self.distributed = distributed
         self.task = task
@@ -102,51 +100,48 @@ class Classifier(LightningModule):
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
 
-    def extract_audio_features(x_audio):
-        pass
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
         return cls(model, learning_rate, distributed)
 
 
-    def forward(self, x_vid, x_a):
-        if self.model is not None:
-            feat = self.model.extract_features(x_vid, True)
-        else:
-            feat = x_vid
-        # Audio branch embeddings
-        x_audio = self.audio_model(x_a)
-        print("shape of embedding:", feat_a.shape)
-        
-        x_audio = self.extract_audio_features(x_audio)
-        x_vid = self.conv1d_0(x_vid) 
+    def forward_stage1(self, x_v,x_a):
+        x_vid = self.conv1d_0(x_v) 
         x_vid = self.conv1d_1(x_vid)
-        #x_audio = 
 
-        h_av = self.av1(x_vid, x_audio)
-        h_va = self.va1(x_audio, x_vid)
+
+    def forward(self, x_v, x_a):
+        if self.model is not None:
+            x_v = self.model.extract_features(x_v, True)
+        else:
+            x_v = x_v
+
+        print("shape of embedding:", x_a.shape)
+        
+        x_v = self.video_model_cnn.forward_stage1(x_v)
+        x_a = self.audio_model_cnn.forward_stage1(x_a)
+
+        h_av = self.av1(x_v, x_a)
+        h_va = self.va1(x_a, x_v)
 
         h_av = h_av.permute(0,2,1)
         h_va = h_va.permute(0,2,1)
 
-        x_audio = h_av+x_audio
-        x_visual = h_va + x_visual
+        x_a = h_av + x_a
+        x_v = h_va + x_v
 
-        x_vid = self.conv1d_2(x_vid) 
-        x_vid = self.conv1d_3(x_vid)
+        x_v = self.video_model_cnn.forward_stage2(x_v)
+        x_a = self.audio_model_cnn.forward_stage2(x_a)
 
-        audio_pooled = x_audio.mean([-1]) #mean accross temporal dimension
-        video_pooled = x_visual.mean([-1])
+        video_pooled = x_v.mean([-1]) #mean accross temporal dimension
+        audio_pooled = x_a.mean([-1])
+
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
+
         x1 = self.classifier_1(x)
-        #x_audio = 
+
         return x1.sigmoid()
-
-
-        # Transformer fusion
-
-        return feat_v.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch # video frames, label, audio mfccs
@@ -197,42 +192,7 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
                                    nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
-# Audio CNN (audio embedding)
-class AudioCNNPool(nn.Module):
 
-    def __init__(self, num_classes=8):
-        super(AudioCNNPool, self).__init__()
-
-        input_channels = 10
-        self.conv1d_0 = conv1d_block_audio(input_channels, 64)
-        self.conv1d_1 = conv1d_block_audio(64, 128)
-        self.conv1d_2 = conv1d_block_audio(128, 256)
-        self.conv1d_3 = conv1d_block_audio(256, 128)
-        
-        self.classifier_1 = nn.Sequential(
-                nn.Linear(128, num_classes),
-            )
-            
-    def forward(self, x):
-        x = self.forward_stage1(x)
-        x = self.forward_stage2(x)
-        x = self.forward_classifier(x)
-        return x
-
-    def forward_stage1(self,x):            
-        x = self.conv1d_0(x)
-        x = self.conv1d_1(x)
-        return x
-    
-    def forward_stage2(self,x):
-        x = self.conv1d_2(x)
-        x = self.conv1d_3(x)   
-        return x
-    
-    def forward_classifier(self, x):   
-        x = x.mean([-1]) #pooling accross temporal dimension
-        x1 = self.classifier_1(x)
-        return x1
 
 #from torchsummary import summary
 #model = AudioCNNPool().to('cuda:0')
