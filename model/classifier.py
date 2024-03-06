@@ -51,15 +51,19 @@ class Classifier(LightningModule):
             self.model = None
 
         config = resolve_config(backbone)
+        print(config.encoder_embed_dim)
 
         self.hidden_layers = 128
-        self.input_dim_audio = 128 # placeholder
+        self.hidden_layers_audio = 128 # placeholder
+        self.out_dim = 128
 
-
-        self.audio_model_cnn = AudioCNNPool(num_classes=1, h_dim=self.hidden_layers)
+        self.audio_model_cnn = AudioCNNPool(num_classes=1, 
+                                            h_dim=self.hidden_layers_audio,
+                                            out_dim=self.out_dim)
         self.video_model_cnn = VideoCnnPool(num_classes=1, 
                                             input_dim=config.encoder_embed_dim, 
-                                            h_dim=self.hidden_layers)
+                                            h_dim=self.hidden_layers,
+                                            out_dim=self.out_dim)
 
 
         if ir_layers == "fc":
@@ -71,11 +75,11 @@ class Classifier(LightningModule):
 
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers, 
-            in_dim_q=self.input_dim_audio, 
-            out_dim=self.input_dim_audio, 
+            in_dim_q=self.hidden_layers_audio, 
+            out_dim=self.hidden_layers_audio, 
             num_heads=num_heads)
         self.va1 = AttentionBlock(
-            in_dim_k=self.input_dim_audio, 
+            in_dim_k=self.hidden_layers_audio, 
             in_dim_q=self.hidden_layers, 
             out_dim=self.hidden_layers, 
             num_heads=num_heads)   

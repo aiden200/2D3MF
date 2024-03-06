@@ -28,14 +28,14 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
 # Audio CNN (audio embedding)
 class AudioCNNPool(nn.Module):
 
-    def __init__(self, num_classes=8,h_dim=128):
+    def __init__(self, num_classes=8,h_dim=128,out_dim=128):
         super(AudioCNNPool, self).__init__()
 
         input_channels = 10
         self.conv1d_0 = conv1d_block_audio(input_channels, 64)
-        self.conv1d_1 = conv1d_block_audio(64, 128)
-        self.conv1d_2 = conv1d_block_audio(128, 256)
-        self.conv1d_3 = conv1d_block_audio(256, h_dim)
+        self.conv1d_1 = conv1d_block_audio(64, h_dim)
+        self.conv1d_2 = conv1d_block_audio(h_dim, 256)
+        self.conv1d_3 = conv1d_block_audio(256, out_dim)
         
         self.classifier_1 = nn.Sequential(
                 nn.Linear(h_dim, num_classes),
@@ -66,13 +66,13 @@ class AudioCNNPool(nn.Module):
 # Audio CNN (audio embedding)
 class VideoCnnPool(nn.Module):
 
-    def __init__(self, num_classes=8, input_dim=768, h_dim = 128):
+    def __init__(self, num_classes=8, input_dim=768, h_dim = 128, out_dim=128):
         super(VideoCnnPool, self).__init__()
 
         self.conv1d_0 = conv1d_block(input_dim, 64) #might be too big
-        self.conv1d_1 = conv1d_block(64, 64)
-        self.conv1d_2 = conv1d_block(64, 128)
-        self.conv1d_3 = conv1d_block(128, h_dim)
+        self.conv1d_1 = conv1d_block(64, h_dim)
+        self.conv1d_2 = conv1d_block(h_dim, 128)
+        self.conv1d_3 = conv1d_block(128, out_dim)
         
         self.classifier_1 = nn.Sequential(
                 nn.Linear(h_dim, num_classes),
