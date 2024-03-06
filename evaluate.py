@@ -41,7 +41,7 @@ def train_celebvhq(args, config):
 
         model = Classifier(
             num_classes, config["backbone"], True, args.marlin_ckpt, "binary", config["learning_rate"], #changed this to binary
-            args.n_gpus > 1, num_heads, ir_layers
+            args.n_gpus > 1, ir_layers, num_heads
         )
 
         dm = CelebvHqDataModule(

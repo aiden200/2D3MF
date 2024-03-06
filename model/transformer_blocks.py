@@ -72,6 +72,7 @@ class Attention(nn.Module):
     def __init__(self, in_dim_k, in_dim_q, out_dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
         self.num_heads = num_heads
+        print("output fim, num heads", out_dim, num_heads)
         head_dim = out_dim // num_heads
         self.scale = qk_scale or head_dim ** -0.5
 
