@@ -65,6 +65,7 @@ class Classifier(LightningModule):
                                             h_dim=self.hidden_layers,
                                             out_dim=self.out_dim)
 
+        self.project_down = nn.Linear(config.encoder_embed_dim, self.hidden_layers)
 
         if ir_layers == "fc":
             self.layer_norm = LayerNorm(config.encoder_embed_dim)
@@ -115,10 +116,15 @@ class Classifier(LightningModule):
         else:
             x_v = x_v
 
-        print("shape of embedding:", x_a.shape)
+        print("shape of embedding:", x_v.shape, x_a.shape)
+
+        # x_v = x_v.permute(0,2,1)
+        # x_a = x_a.permute(0,2,1)
         
-        x_v = self.video_model_cnn.forward_stage1(x_v)
+        # x_v = self.video_model_cnn.forward_stage1(x_v)
         x_a = self.audio_model_cnn.forward_stage1(x_a)
+
+        x_v = self.project_down(x_v)
 
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
