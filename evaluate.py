@@ -24,6 +24,8 @@ def train_celebvhq(args, config):
     finetune = config["finetune"]
     learning_rate = config["learning_rate"]
     task = config["task"]
+    num_heads = config['num_heads']
+    ir_layers = config['ir_layers']
 
     if task == "appearance":
         num_classes = 40
@@ -39,7 +41,7 @@ def train_celebvhq(args, config):
 
         model = Classifier(
             num_classes, config["backbone"], True, args.marlin_ckpt, "binary", config["learning_rate"], #changed this to binary
-            args.n_gpus > 1,
+            args.n_gpus > 1, num_heads, ir_layers
         )
 
         dm = CelebvHqDataModule(
