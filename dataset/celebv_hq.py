@@ -120,6 +120,11 @@ class CelebvHqFeatures(CelebvHqBase):
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+        # audio_path = os.path.join(self.data_root, "audio", extract_number(self.name_list[index]) + ".mp3")
+        # audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
+        # start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
+        # audio = audio[start_audio_idx:start_audio_idx+sr]
+        # audio_mfccs = self.get_mfccs(audio, sr)
 
         x = torch.from_numpy(np.load(feat_path)).float()
 
@@ -136,7 +141,6 @@ class CelebvHqFeatures(CelebvHqBase):
             raise ValueError(self.temporal_reduction)
 
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
-
 
         return x, torch.tensor([y], dtype=torch.float).bool()
 
