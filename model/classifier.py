@@ -104,15 +104,9 @@ class Classifier(LightningModule):
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
 
-
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
         return cls(model, learning_rate, distributed)
-
-
-    def forward_stage1(self, x_v,x_a):
-        x_vid = self.conv1d_0(x_v) 
-        x_vid = self.conv1d_1(x_vid)
 
 
     def forward(self, x_v, x_a):
@@ -144,7 +138,6 @@ class Classifier(LightningModule):
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
         x1 = self.classifier_1(x)
-
         return x1.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:

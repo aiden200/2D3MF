@@ -1,5 +1,5 @@
 model_name: "celebvhq_marlin_deepfake_ft"
-backbone: "marlin_vit_base_ytf"
+backbone: "marlin_vit_small_ytf"
 dataset: "celebvhq"
 task: "deepfake"
 temporal_reduction: "mean"
