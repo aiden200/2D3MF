@@ -1,4 +1,4 @@
-# MARLIN: Masked Autoencoder for facial video Representation LearnINg
+# 2D3MF: Deepfake Detection using Multi Modal Fusion
 
 <div>
     <img src="assets/teaser.svg">
