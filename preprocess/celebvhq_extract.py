@@ -19,7 +19,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # model = Marlin.from_online(args.backbone)
-    model = Marlin.from_file("marlin_vit_base_ytf", "pretrained/marlin_vit_base_ytf.encoder.pt")
+    if args.backbone == "marlin_vit_small_ytf":
+        model = Marlin.from_file("marlin_vit_small_ytf", "pretrained/marlin_vit_small_ytf.encoder.pt")
+    elif args.backbone == "marlin_vit_base_ytf":
+        model = Marlin.from_file("marlin_vit_base_ytf", "pretrained/marlin_vit_base_ytf.encoder.pt")
+    elif args.backbone == "marlin_vit_large_ytf":
+        model = Marlin.from_file("marlin_vit_large_ytf", "pretrained/marlin_vit_large_ytf.encoder.pt")
+    else:
+        raise ValueError(f"Incorrect backbone {args.backbone}")
     config = resolve_config(args.backbone)
     feat_dir = args.backbone
 
