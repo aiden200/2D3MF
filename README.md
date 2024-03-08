@@ -283,7 +283,7 @@ Extract MARLIN features from the cropped video and saved to `<backbone>` directo
 ```bash
 python preprocess/celebvhq_extract.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
 
-python preprocess/celebvhq_extract.py --data_dir yt_mixed --backbone marlin_vit_base_ytf
+python preprocess/celebvhq_extract.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml
 
 ```
 

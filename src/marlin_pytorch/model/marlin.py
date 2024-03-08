@@ -15,6 +15,7 @@ from torch.nn import Linear, Module
 
 from ..config import resolve_config, Downloadable
 from ..face_detector import FaceXZooFaceDetector
+from dataset.utils import *
 
 from .decoder import MarlinDecoder
 from .encoder import MarlinEncoder
@@ -149,30 +150,74 @@ class Marlin(Module):
 
         return features
 
-    def _load_video(self, video_path: str, sample_rate: int, stride: int) -> Generator[Tensor, None, None]:
+    @torch.no_grad()
+    def extract_video_and_audio(self, video_path: str, crop_face: bool = False, sample_rate: int = 2,
+        stride: int = 16,
+        reduction: str = "none",
+        keep_seq: bool = False,
+        detector_device: Optional[str] = None,
+        audio_path: str = None,
+        temporal_axis: int = 1
+    ) -> Tensor:
+        self.eval()
+        features = []
+        
+        for v in self._load_video(video_path, sample_rate, stride, temporal_axis):
+            # v: (1, C, T, H, W)
+            if crop_face:
+                if not FaceXZooFaceDetector.inited:
+                    Path(".marlin").mkdir(exist_ok=True)
+                    FaceXZooFaceDetector.init(
+                        face_sdk_path=FaceXZooFaceDetector.install(os.path.join(".marlin", "FaceXZoo")),
+                        device=detector_device or self.device
+                    )
+                v = self._crop_face(v)
+            assert v.shape[3:] == (224, 224)
+            features.append(self.extract_features(v, keep_seq=keep_seq))
+
+        if audio_path:
+            probe = ffmpeg.probe(video_path)["streams"][0]
+            n_frames = int(probe["nb_frames"])
+
+            audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
+            start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
+            audio = audio[start_audio_idx:start_audio_idx+sr*self.temporal_axis]
+            audio_mfccs = self.get_mfccs(audio, sr)
+            torch.tensor(audio_mfccs)
+
+        features = torch.cat(features)  # (N, 768)
+
+        if reduction == "mean":
+            return features.mean(dim=0)
+        elif reduction == "max":
+            return features.max(dim=0)[0]
+
+        return features
+
+    def _load_video(self, video_path: str, sample_rate: int, stride: int, temporal_axis: int) -> Generator[Tensor, None, None]:
         probe = ffmpeg.probe(video_path)
         total_frames = int(probe["streams"][0]["nb_frames"])
-        if total_frames <= self.clip_frames:
+        if total_frames <= temporal_axis:
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
             # pad frames to 16
-            v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
-            assert v.shape[0] == self.clip_frames
+            v = padding_video(video, temporal_axis, "same")  # (T, C, H, W)
+            assert v.shape[0] == temporal_axis
             yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
-        elif total_frames <= self.clip_frames * sample_rate:
+        elif total_frames <= temporal_axis * sample_rate:
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
             # use first 16 frames
-            if video.shape[0] < self.clip_frames:
+            if video.shape[0] < temporal_axis:
                 # double-check the number of frames, see https://github.com/pytorch/vision/issues/2490
-                v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
-            v = video[:self.clip_frames]
+                v = padding_video(video, temporal_axis, "same")  # (T, C, H, W)
+            v = video[:temporal_axis]
             yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
         else:
             # extract features based on sliding window
             cap = cv2.VideoCapture(video_path)
-            deq = deque(maxlen=self.clip_frames)
+            deq = deque(maxlen=temporal_axis)
 
-            clip_start_indexes = list(range(0, total_frames - self.clip_frames * sample_rate, stride * sample_rate))
-            clip_end_indexes = [i + self.clip_frames * sample_rate - 1 for i in clip_start_indexes]
+            clip_start_indexes = list(range(0, total_frames - temporal_axis * sample_rate, stride * sample_rate))
+            clip_end_indexes = [i + temporal_axis * sample_rate - 1 for i in clip_start_indexes]
 
             current_index = -1
             while True:
