@@ -106,7 +106,7 @@ class CelebvHq(CelebvHqBase):
         
         audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
         start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
-        audio = audio[start_audio_idx:start_audio_idx+sr]
+        audio = audio[start_audio_idx:start_audio_idx+sr*self.temporal_axis]
         audio_mfccs = self.get_mfccs(audio, sr)
         # print(f"Video shape: {video.shape}")
         return video, torch.tensor([y], dtype=torch.float).bool(), torch.tensor(audio_mfccs) # here we need to return the audio features too
