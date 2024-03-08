@@ -117,11 +117,12 @@ class Classifier(LightningModule):
     def forward(self, x_v, x_a):
         ## given that we have double the frames, here we need to segment into half
         #(B, C, T, H, W) -> divide T by temporal_axis
+
         x_v_split = np.array_split(x_v, self.temporal_axis, axis=2) # divide them in two with split 
-        x_v_split = np.concatenate(x_v_split) #(split*B, C, T, H, W)
+        x_v_split = torch.concatenate(x_v_split) #(split*B, C, T, H, W)
         # slice audio too
         if self.model is not None:
-            x_v = self.model.extract_features(x_v, True)
+            x_v = self.model.extract_features(x_v_split, True)
         else:
             x_v = x_v
             
@@ -143,11 +144,14 @@ class Classifier(LightningModule):
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
-        h_av = h_av.permute(0,2,1)
-        h_va = h_va.permute(0,2,1)
+        # h_av = h_av.permute(0,2,1)
+        # h_va = h_va.permute(0,2,1)
 
         x_a = h_av + x_a
         x_v = h_va + x_v
+
+        x_v = x_v.permute(0,2,1)
+        x_a = x_a.permute(0,2,1)
 
         x_v = self.video_model_cnn.forward_stage2(x_v)
         x_a = self.audio_model_cnn.forward_stage2(x_a)

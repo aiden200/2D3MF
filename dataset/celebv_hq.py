@@ -71,45 +71,44 @@ class CelebvHq(CelebvHqBase):
         n_frames = int(probe["nb_frames"])
         
         ## this is for double the time
-        self.clip_frames*=self.temporal_axis
 
+        temporal_frames = self.clip_frames*self.temporal_axis
 
-        if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
+        if n_frames <= temporal_frames: # not needed (as long as our videos are > 0.5sec)
             video = read_video(video_path, channel_first=True).video / 255
             # pad frames to 16
-            video = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
+            video = padding_video(video, temporal_frames, "same")  # (T, C, H, W)
             video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
             return video, torch.tensor(y, dtype=torch.long)
-        elif n_frames <= self.clip_frames * self.temporal_sample_rate: # not needed (as long as our videos are > 1sec)
+        elif n_frames <= temporal_frames * self.temporal_sample_rate: # not needed (as long as our videos are > 1sec)
             # reset a lower temporal sample rate
-            sample_rate = n_frames // self.clip_frames
+            sample_rate = n_frames // temporal_frames
         else:
             sample_rate = self.temporal_sample_rate
         # sample frames
             
         ## clip_frames hyperparameters
         
-        video_indexes = sample_indexes(n_frames, self.clip_frames, sample_rate)
-        print(video_indexes)
+        video_indexes = sample_indexes(n_frames, temporal_frames, sample_rate)
         reader = torchvision.io.VideoReader(video_path)
         fps = reader.get_metadata()["video"]["fps"][0]
         reader.seek(video_indexes[0].item() / fps, True)
         frames = []
-        for frame in islice(reader, 0, self.clip_frames * sample_rate, sample_rate):
+        for frame in islice(reader, 0, temporal_frames * sample_rate, sample_rate):
             frames.append(frame["data"])
-        print(len(frames), frames[0].shape)
+
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
         
         # clip_frames = how many frames
         
-        assert video.shape[1] == self.clip_frames, video_path
+        assert video.shape[1] == temporal_frames, video_path
         
         audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
         start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
         audio = audio[start_audio_idx:start_audio_idx+sr]
         audio_mfccs = self.get_mfccs(audio, sr)
-        print(video.shape)
+        # print(f"Video shape: {video.shape}")
         return video, torch.tensor([y], dtype=torch.float).bool(), torch.tensor(audio_mfccs) # here we need to return the audio features too
 
     def get_mfccs(self, y, sr):
