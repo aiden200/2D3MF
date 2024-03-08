@@ -26,6 +26,7 @@ class MarlinConfig:
     tubelet_size: int
     ir_layers: str
     num_heads: int
+    temporal_axis: int
 
 
 class Downloadable(ABC):
@@ -68,6 +69,7 @@ class SharedConfig(MarlinConfig):
     tubelet_size = 2
     ir_layers = "conv"
     num_heads= 1
+    temporal_axis =1
 
 
 @register_model("marlin_vit_base_ytf")
@@ -101,6 +103,7 @@ class MarlinVitSmallConfig(NoArgInit, SharedConfig, Downloadable):
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_small_ytf.encoder.pt"
     ir_layers = "conv"
     num_heads= 1
+    temporal_axis=1
 
 @register_model("marlin_vit_large_ytf")
 @Singleton
@@ -117,6 +120,7 @@ class MarlinVitLargeConfig(NoArgInit, SharedConfig, Downloadable):
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_large_ytf.encoder.pt"
     ir_layers = "conv"
     num_heads= 1
+    temporal_axis=1
 
 def register_model_from_yaml(name: str, path: str) -> None:
     config = read_yaml(path)
@@ -139,7 +143,8 @@ def register_model_from_yaml(name: str, path: str) -> None:
         init_values=config["init_values"],
         tubelet_size=config["tubelet_size"],
         ir_layers = config["ir_layers"],
-        num_heads=config["num_heads"]
+        num_heads=config["num_heads"],
+        temporal_axis=config["temporal_axis"]
     )
     _configs[name] = marlin_config
 

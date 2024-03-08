@@ -26,6 +26,7 @@ def train_celebvhq(args, config):
     task = config["task"]
     num_heads = config['num_heads']
     ir_layers = config['ir_layers']
+    temporal_axis = config['temporal_axis']
 
     if task == "appearance":
         num_classes = 40
@@ -41,7 +42,7 @@ def train_celebvhq(args, config):
 
         model = Classifier(
             num_classes, config["backbone"], True, args.marlin_ckpt, "binary", config["learning_rate"], #changed this to binary
-            args.n_gpus > 1, ir_layers, num_heads
+            args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis
         )
 
         dm = CelebvHqDataModule(
@@ -49,7 +50,7 @@ def train_celebvhq(args, config):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             clip_frames=backbone_config.n_frames,
-            temporal_sample_rate=2
+            temporal_sample_rate=2, temporal_axis=temporal_axis
         )
 
     else:

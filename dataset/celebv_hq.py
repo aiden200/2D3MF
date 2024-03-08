@@ -54,11 +54,13 @@ class CelebvHq(CelebvHqBase):
         clip_frames: int,
         temporal_sample_rate: int,
         data_ratio: float = 1.0,
-        take_num: Optional[int] = None
+        take_num: Optional[int] = None,
+        temporal_axis: int = 1
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.clip_frames = clip_frames
         self.temporal_sample_rate = temporal_sample_rate
+        self.temporal_axis = temporal_axis
 
     def __getitem__(self, index: int):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
@@ -67,6 +69,9 @@ class CelebvHq(CelebvHqBase):
         audio_path = os.path.join(self.data_root, "audio", extract_number(self.name_list[index]) + ".mp3")
         probe = ffmpeg.probe(video_path)["streams"][0]
         n_frames = int(probe["nb_frames"])
+        
+        ## this is for double the time
+        self.clip_frames*=self.temporal_axis
 
         if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
             video = read_video(video_path, channel_first=True).video / 255
@@ -89,6 +94,8 @@ class CelebvHq(CelebvHqBase):
             frames.append(frame["data"])
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
+        
+        # clip_frames = how many frames
         
         assert video.shape[1] == self.clip_frames, video_path
         
@@ -159,7 +166,8 @@ class CelebvHqDataModule(LightningDataModule):
         data_ratio: float = 1.0,
         take_train: Optional[int] = None,
         take_val: Optional[int] = None,
-        take_test: Optional[int] = None
+        take_test: Optional[int] = None,
+        temporal_axis: float = 1.0
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -175,6 +183,7 @@ class CelebvHqDataModule(LightningDataModule):
         self.take_train = take_train
         self.take_val = take_val
         self.take_test = take_test
+        self.temporal_axis = temporal_axis
 
         if load_raw:
             assert clip_frames is not None
@@ -190,11 +199,11 @@ class CelebvHqDataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         if self.load_raw:
             self.train_dataset = CelebvHq(self.root_dir, "train", self.task, self.clip_frames,
-                self.temporal_sample_rate, self.data_ratio, self.take_train)
+                self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis)
             self.val_dataset = CelebvHq(self.root_dir, "val", self.task, self.clip_frames,
-                self.temporal_sample_rate, self.data_ratio, self.take_val)
+                self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis)
             self.test_dataset = CelebvHq(self.root_dir, "test", self.task, self.clip_frames,
-                self.temporal_sample_rate, 1.0, self.take_test)
+                self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis)
         else:
             self.train_dataset = CelebvHqFeatures(self.root_dir, self.feature_dir, "train", self.task,
                 self.temporal_reduction, self.data_ratio, self.take_train)

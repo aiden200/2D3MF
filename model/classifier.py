@@ -16,6 +16,7 @@ from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool
 import torch.nn as nn
 import time
 import torch
+import numpy as np
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
@@ -37,7 +38,8 @@ class Classifier(LightningModule):
         task: Literal["binary", "multiclass", "multilabel"] = "binary",
         learning_rate: float = 1e-4, distributed: bool = False,
         ir_layers = "conv",
-        num_heads = 1
+        num_heads = 1,
+        temporal_axis: int = 1
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -52,7 +54,9 @@ class Classifier(LightningModule):
 
         config = resolve_config(backbone)
         print(config.encoder_embed_dim)
-
+        
+        
+        self.temporal_axis = temporal_axis
         self.hidden_layers = 128
         self.hidden_layers_audio = 128 # placeholder
         self.out_dim = 128
@@ -111,10 +115,18 @@ class Classifier(LightningModule):
 
 
     def forward(self, x_v, x_a):
+        ## given that we have double the frames, here we need to segment into half
+        #(B, C, T, H, W) -> divide T by temporal_axis
+        x_v_split = np.array_split(x_v, self.temporal_axis, axis=2) # divide them in two with split 
+        x_v_split = np.concatenate(x_v_split) #(split*B, C, T, H, W)
+        
         if self.model is not None:
             x_v = self.model.extract_features(x_v, True)
         else:
             x_v = x_v
+            
+        #now we need to seperate it back to normal (B, E) -> (B,T,E)
+        x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
 
         print("shape of embedding:", x_v.shape, x_a.shape)
 

@@ -8,3 +8,4 @@ seq_mean_pool: true
 finetune: true
 ir_layers: "conv"
 num_heads: 1
+temporal_axis: 2
