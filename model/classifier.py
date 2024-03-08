@@ -111,6 +111,15 @@ class Classifier(LightningModule):
 
 
     def forward(self, x_v, x_a):
+        # B, (T1, C, H, W)
+        # B, (T2, C, H, W)
+        # B, (T, C, H, W)
+        # B, (T, C, H, W)
+
+        #split audio too.
+
+
+        ## slice them here and treat  
         if self.model is not None:
             x_v = self.model.extract_features(x_v, True)
         else:
@@ -125,7 +134,9 @@ class Classifier(LightningModule):
         x_a = self.audio_model_cnn.forward_stage1(x_a)
 
         x_v = self.project_down(x_v)
-
+    
+        x_a = x_a.permute(0,2,1)
+        print(x_a.shape, x_v.shape)
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 

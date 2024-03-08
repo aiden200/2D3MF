@@ -68,6 +68,7 @@ class CelebvHq(CelebvHqBase):
         probe = ffmpeg.probe(video_path)["streams"][0]
         n_frames = int(probe["nb_frames"])
 
+
         if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
             video = read_video(video_path, channel_first=True).video / 255
             # pad frames to 16
@@ -80,13 +81,18 @@ class CelebvHq(CelebvHqBase):
         else:
             sample_rate = self.temporal_sample_rate
         # sample frames
+            
+        ## clip_frames hyperparameters
+        
         video_indexes = sample_indexes(n_frames, self.clip_frames, sample_rate)
+        print(video_indexes)
         reader = torchvision.io.VideoReader(video_path)
         fps = reader.get_metadata()["video"]["fps"][0]
         reader.seek(video_indexes[0].item() / fps, True)
         frames = []
         for frame in islice(reader, 0, self.clip_frames * sample_rate, sample_rate):
             frames.append(frame["data"])
+        print(len(frames), frames[0].shape)
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
         
@@ -96,6 +102,7 @@ class CelebvHq(CelebvHqBase):
         start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
         audio = audio[start_audio_idx:start_audio_idx+sr]
         audio_mfccs = self.get_mfccs(audio, sr)
+        print(video.shape)
         return video, torch.tensor([y], dtype=torch.float).bool(), torch.tensor(audio_mfccs) # here we need to return the audio features too
 
     def get_mfccs(self, y, sr):
