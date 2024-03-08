@@ -118,8 +118,10 @@ class Classifier(LightningModule):
         ## given that we have double the frames, here we need to segment into half
         #(B, C, T, H, W) -> divide T by temporal_axis
 
-        x_v_split = torch.array_split(x_v, self.temporal_axis, axis=2) # divide them in two with split 
-        x_v_split = torch.concatenate(x_v_split) #(split*B, C, T, H, W)
+        # x_v_split = np.array_split(x_v, self.temporal_axis, axis=2) # divide them in two with split
+        # print(x_v_split[0].shape) 
+        # x_v_split = torch.concatenate(x_v_split) #(split*B, C, T//2, H, W)
+        x_v_split = x_v.view((self.temporal_axis * x_v.shape[0], x_v.shape[1], x_v.shape[2]//2, x_v.shape[3], x_v.shape[4]))
         # slice audio too
         if self.model is not None:
             x_v = self.model.extract_features(x_v_split, True)
