@@ -41,7 +41,8 @@ def train_celebvhq(args, config):
         backbone_config = resolve_config(config["backbone"])
 
         model = Classifier(
-            num_classes, config["backbone"], True, args.marlin_ckpt, "binary", config["learning_rate"], #changed this to binary
+            num_classes, config["backbone"], True, args.marlin_ckpt, 
+            "binary", config["learning_rate"], #changed this to binary
             args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis
         )
 
@@ -57,6 +58,7 @@ def train_celebvhq(args, config):
         model = Classifier(
             num_classes, config["backbone"], False,
             None, "binary", config["learning_rate"], args.n_gpus > 1,
+            ir_layers, num_heads, temporal_axis=temporal_axis
         )
 
         dm = CelebvHqDataModule(

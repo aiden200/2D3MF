@@ -115,15 +115,12 @@ class Classifier(LightningModule):
 
 
     def forward(self, x_v, x_a):
-        ## given that we have double the frames, here we need to segment into half
         #(B, C, T, H, W) -> divide T by temporal_axis
 
-        # x_v_split = np.array_split(x_v, self.temporal_axis, axis=2) # divide them in two with split
-        # print(x_v_split[0].shape) 
-        # x_v_split = torch.concatenate(x_v_split) #(split*B, C, T//2, H, W)
-        x_v_split = x_v.view((self.temporal_axis * x_v.shape[0], x_v.shape[1], x_v.shape[2]//2, x_v.shape[3], x_v.shape[4]))
         # slice audio too
         if self.model is not None:
+            # (split*B, C, T//2, H, W)
+            x_v_split = x_v.view((self.temporal_axis * x_v.shape[0], x_v.shape[1], x_v.shape[2]//2, x_v.shape[3], x_v.shape[4]))
             x_v = self.model.extract_features(x_v_split, True)
         else:
             x_v = x_v
@@ -131,7 +128,7 @@ class Classifier(LightningModule):
         #now we need to seperate it back to normal (B, E) -> (B,T,E)
         x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
 
-        print("shape of embedding:", x_v.shape, x_a.shape)
+        # print("shape of embedding:", x_v.shape, x_a.shape)
 
         # x_v = x_v.permute(0,2,1)
         # x_a = x_a.permute(0,2,1)
@@ -142,7 +139,7 @@ class Classifier(LightningModule):
         x_v = self.project_down(x_v)
     
         x_a = x_a.permute(0,2,1)
-        print(x_a.shape, x_v.shape)
+        # print(x_a.shape, x_v.shape)
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
