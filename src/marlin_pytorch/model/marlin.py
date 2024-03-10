@@ -152,7 +152,7 @@ class Marlin(Module):
 
     @torch.no_grad()
     def extract_video_and_audio(self, video_path: str, crop_face: bool = False, sample_rate: int = 2,
-        stride: int = 16,
+        stride: int = 32,
         reduction: str = "none",
         keep_seq: bool = False,
         detector_device: Optional[str] = None,
@@ -161,9 +161,10 @@ class Marlin(Module):
     ) -> Tensor:
         self.eval()
         features = []
-        
-        for v in self._load_video(video_path, sample_rate, stride, temporal_axis):
+        audio_features = []        
+        for v, a in self._load_video(video_path, audio_path, sample_rate, stride, temporal_axis):
             # v: (1, C, T, H, W)
+            print("audio shape", a.shape)
             if crop_face:
                 if not FaceXZooFaceDetector.inited:
                     Path(".marlin").mkdir(exist_ok=True)
@@ -172,18 +173,20 @@ class Marlin(Module):
                         device=detector_device or self.device
                     )
                 v = self._crop_face(v)
+            audio_featires.append(a) # add computed mffcs
             assert v.shape[3:] == (224, 224)
             features.append(self.extract_features(v, keep_seq=keep_seq))
-
-        if audio_path:
-            probe = ffmpeg.probe(video_path)["streams"][0]
-            n_frames = int(probe["nb_frames"])
-
-            audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
-            start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
-            audio = audio[start_audio_idx:start_audio_idx+sr*self.temporal_axis]
-            audio_mfccs = self.get_mfccs(audio, sr)
-            torch.tensor(audio_mfccs)
+            
+        #if audio_path:
+        #    probe = ffmpeg.probe(video_path)["streams"][0]
+        #    n_frames = int(probe["nb_frames"])
+        #    reader = torchvision.io.VideoReader(video_path)
+        #    video_fps = reader.get_metadata()["video"]["fps"][0]
+        #    audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
+        #    end_audio_idx = int((video_indexes[0]/video_fps)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
+        #    audio = audio[end_audio_idx:end_audio_idx+sr*self.temporal_axis]
+        #    audio_mfccs = self.get_mfccs(audio, sr)
+        #    torch.tensor(audio_mfccs)
 
         features = torch.cat(features)  # (N, 768)
 
@@ -194,16 +197,16 @@ class Marlin(Module):
 
         return features
 
-    def _load_video(self, video_path: str, sample_rate: int, stride: int, temporal_axis: int) -> Generator[Tensor, None, None]:
+    def _load_video(self, video_path: str, audio_path: str, sample_rate: int, stride: int, temporal_axis: int) -> Generator[Tensor, None, None]:
         probe = ffmpeg.probe(video_path)
         total_frames = int(probe["streams"][0]["nb_frames"])
-        if total_frames <= temporal_axis:
+        if total_frames <= self.clip_frames * temporal_axis: # video shorter than 32 frames -> not relevant if we assume videos < 2 sec long 
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
-            # pad frames to 16
-            v = padding_video(video, temporal_axis, "same")  # (T, C, H, W)
+            # pad frames to 32
+            v = padding_video(video, self.clip_frames*temporal_axis, "same")  # (T, C, H, W)
             assert v.shape[0] == temporal_axis
             yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
-        elif total_frames <= temporal_axis * sample_rate:
+        elif total_frames <= self.clip_frames * temporal_axis * sample_rate: # less than 64 frames -> not relevant if we assume videos < 2 sec long 
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
             # use first 16 frames
             if video.shape[0] < temporal_axis:
@@ -216,10 +219,11 @@ class Marlin(Module):
             cap = cv2.VideoCapture(video_path)
             deq = deque(maxlen=temporal_axis)
 
-            clip_start_indexes = list(range(0, total_frames - temporal_axis * sample_rate, stride * sample_rate))
-            clip_end_indexes = [i + temporal_axis * sample_rate - 1 for i in clip_start_indexes]
+            clip_start_indexes = list(range(0, total_frames - self.clip_frames * temporal_axis * sample_rate, stride * sample_rate))
+            clip_end_indexes = [i + self.clip_frames * temporal_axis * sample_rate - 1 for i in clip_start_indexes]
 
             current_index = -1
+            win_idx = 0 # window index for start and end of an audiovisual frame
             while True:
                 ret, frame = cap.read()
                 if not ret:
@@ -235,7 +239,17 @@ class Marlin(Module):
                 deq.append(frame)
                 if current_index in clip_end_indexes:
                     v = torch.stack(list(deq))  # (T, C, H, W)
-                    yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
+                    if audio_path:
+                        reader = torchvision.io.VideoReader(video_path)
+                        fps = reader.get_metadata()["video"]["fps"][0]
+                        audio, sr = audio_load(audio_path)
+                        start_audio_idx = int((clip_start_indexes[win_idx]/fps)*fps)
+                        #end_audio_idx = int((clip_end_indexes[win_idx]/fps)*fps)
+                        audio = audio[start_audio_idx:start_audio_idx+sr*temporal_axis] # could also use the end index
+                        audio_mfccs = self.get_mfccs(audio, sr)
+                        yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device), audio_mfccs
+                    else:
+                        yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
 
             cap.release()
 
