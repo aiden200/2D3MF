@@ -28,6 +28,10 @@ if __name__ == '__main__':
         model = Marlin.from_file("marlin_vit_large_ytf", "pretrained/marlin_vit_large_ytf.encoder.pt")
     else:
         raise ValueError(f"Incorrect backbone {args.backbone}")
+    
+    if not args.config:
+        raise ValueError("Missing config argument --config")
+    
     config = resolve_config(args.backbone)
     hp_config = read_yaml(args.config)
     temporal_axis = hp_config['temporal_axis']
