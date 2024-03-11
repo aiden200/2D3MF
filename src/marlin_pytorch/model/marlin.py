@@ -164,6 +164,7 @@ class Marlin(Module):
         audio_features = []        
         for v, a in self._load_video(video_path, audio_path, sample_rate, stride, temporal_axis):
             # v: (1, C, T, H, W)
+            print(v.shape, a.shape)
             if crop_face:
                 if not FaceXZooFaceDetector.inited:
                     Path(".marlin").mkdir(exist_ok=True)
@@ -194,20 +195,20 @@ class Marlin(Module):
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
             # pad frames to 32
             v = padding_video(video, self.clip_frames*temporal_axis, "same")  # (T, C, H, W)
-            assert v.shape[0] == temporal_axis
+            assert v.shape[0] == self.clip_frames*temporal_axis
             yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
         elif total_frames <= self.clip_frames * temporal_axis * sample_rate: # less than 64 frames -> not relevant if we assume videos < 2 sec long 
             video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
             # use first 16 frames
-            if video.shape[0] < temporal_axis:
+            if video.shape[0] < self.clip_frames*temporal_axis:
                 # double-check the number of frames, see https://github.com/pytorch/vision/issues/2490
-                v = padding_video(video, temporal_axis, "same")  # (T, C, H, W)
-            v = video[:temporal_axis]
+                v = padding_video(video, self.clip_frames*temporal_axis, "same")  # (T, C, H, W)
+            v = video[:self.clip_frames*temporal_axis]
             yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
         else:
             # extract features based on sliding window
             cap = cv2.VideoCapture(video_path)
-            deq = deque(maxlen=temporal_axis)
+            deq = deque(maxlen=self.clip_frames*temporal_axis)
 
             clip_start_indexes = list(range(0, total_frames - self.clip_frames * temporal_axis * sample_rate, stride * sample_rate))
             clip_end_indexes = [i + self.clip_frames * temporal_axis * sample_rate - 1 for i in clip_start_indexes]

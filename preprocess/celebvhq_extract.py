@@ -57,7 +57,7 @@ if __name__ == '__main__':
         if audio_save_path in finished_audios:
             audio_save_path = None
         finished_audios.append(audio_save_path)
-
+        audio_feat = None
         try:
             feat, audio_feat = model.extract_video_and_audio(
                 video_path, crop_face=False,
