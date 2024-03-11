@@ -49,7 +49,9 @@ if __name__ == '__main__':
     Path(os.path.join(args.data_dir, feat_dir)).mkdir(parents=True, exist_ok=True)
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
-        audio_path = os.path.join(raw_audio_path, video_path[:3] + ".mp3")
+        audio_name = video_name.split("_")[0]
+        audio_name = audio_name.split("-")[0]
+        audio_path = os.path.join(raw_audio_path, audio_name + ".mp3")
         save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
         audio_save_path = os.path.join(args.data_dir, feat_dir, f"{video_path[:3]}.npy")
         if audio_save_path in finished_audios:

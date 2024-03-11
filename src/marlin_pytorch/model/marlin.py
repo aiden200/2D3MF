@@ -9,17 +9,17 @@ import cv2
 import ffmpeg
 import numpy as np
 import torch
+import torchvision
 from einops import rearrange
 from torch import Tensor
 from torch.nn import Linear, Module
 
 from ..config import resolve_config, Downloadable
 from ..face_detector import FaceXZooFaceDetector
-from dataset.utils import *
 
 from .decoder import MarlinDecoder
 from .encoder import MarlinEncoder
-from ..util import read_video, padding_video, DownloadProgressBar
+from ..util import read_video, padding_video, DownloadProgressBar, get_mfccs, audio_load
 
 
 class Marlin(Module):
@@ -164,7 +164,6 @@ class Marlin(Module):
         audio_features = []        
         for v, a in self._load_video(video_path, audio_path, sample_rate, stride, temporal_axis):
             # v: (1, C, T, H, W)
-            print("audio shape", a.shape)
             if crop_face:
                 if not FaceXZooFaceDetector.inited:
                     Path(".marlin").mkdir(exist_ok=True)
@@ -173,29 +172,20 @@ class Marlin(Module):
                         device=detector_device or self.device
                     )
                 v = self._crop_face(v)
-            audio_featires.append(a) # add computed mffcs
+            audio_features.append(a) # add computed mffcs
             assert v.shape[3:] == (224, 224)
             features.append(self.extract_features(v, keep_seq=keep_seq))
             
-        #if audio_path:
-        #    probe = ffmpeg.probe(video_path)["streams"][0]
-        #    n_frames = int(probe["nb_frames"])
-        #    reader = torchvision.io.VideoReader(video_path)
-        #    video_fps = reader.get_metadata()["video"]["fps"][0]
-        #    audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
-        #    end_audio_idx = int((video_indexes[0]/video_fps)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
-        #    audio = audio[end_audio_idx:end_audio_idx+sr*self.temporal_axis]
-        #    audio_mfccs = self.get_mfccs(audio, sr)
-        #    torch.tensor(audio_mfccs)
 
         features = torch.cat(features)  # (N, 768)
+        audio_features = torch.cat(audio_features, 1) # (10, 87*N)
 
         if reduction == "mean":
             return features.mean(dim=0)
         elif reduction == "max":
             return features.max(dim=0)[0]
 
-        return features
+        return features, audio_features
 
     def _load_video(self, video_path: str, audio_path: str, sample_rate: int, stride: int, temporal_axis: int) -> Generator[Tensor, None, None]:
         probe = ffmpeg.probe(video_path)
@@ -246,7 +236,7 @@ class Marlin(Module):
                         start_audio_idx = int((clip_start_indexes[win_idx]/fps)*fps)
                         #end_audio_idx = int((clip_end_indexes[win_idx]/fps)*fps)
                         audio = audio[start_audio_idx:start_audio_idx+sr*temporal_axis] # could also use the end index
-                        audio_mfccs = self.get_mfccs(audio, sr)
+                        audio_mfccs = get_mfccs(audio, sr)
                         yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device), audio_mfccs
                     else:
                         yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
