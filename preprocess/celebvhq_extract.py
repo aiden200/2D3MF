@@ -34,18 +34,25 @@ if __name__ == '__main__':
     model.eval()
 
     raw_video_path = os.path.join(args.data_dir, "cropped")
+    raw_audio_path = os.path.join(args.data_dir, "audio")
     all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
     Path(os.path.join(args.data_dir, feat_dir)).mkdir(parents=True, exist_ok=True)
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
+        audio_name = video_name.split("_")[0]
+        audio_name = audio_name.split("-")[0]
+        audio_path = os.path.join(raw_audio_path, audio_name + ".mp3")
         save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
         try:
-            feat = model.extract_video(
+            feat, audio_feat = model.extract_video_and_audio(
                 video_path, crop_face=False,
                 sample_rate=config.tubelet_size, stride=config.n_frames,
-                keep_seq=False, reduction="none")
+                keep_seq=False, reduction="none", audio_path=audio_path)
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
             feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
+            audio_feat = torch.zeros(10, 87, dtype=torch.float32)
         np.save(save_path, feat.cpu().numpy())
+        #if audio_feat:
+        #    np.save(audio_save_path, audio_feat.cpu().numpy())
