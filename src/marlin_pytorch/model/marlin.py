@@ -9,6 +9,7 @@ import cv2
 import ffmpeg
 import numpy as np
 import torch
+import torchvision
 from einops import rearrange
 from torch import Tensor
 from torch.nn import Linear, Module
@@ -18,7 +19,7 @@ from ..face_detector import FaceXZooFaceDetector
 
 from .decoder import MarlinDecoder
 from .encoder import MarlinEncoder
-from ..util import read_video, padding_video, DownloadProgressBar
+from ..util import read_video, padding_video, DownloadProgressBar, get_mfccs, audio_load
 
 
 class Marlin(Module):
@@ -148,6 +149,49 @@ class Marlin(Module):
             return features.max(dim=0)[0]
 
         return features
+
+    @torch.no_grad()
+    def extract_video_and_audio(self, video_path: str, crop_face: bool = False, sample_rate: int = 2,
+        stride: int = 16,
+        reduction: str = "none",
+        keep_seq: bool = False,
+        detector_device: Optional[str] = None,
+        audio_path: str = None
+    ) -> Tensor:
+        self.eval()
+        features = []
+        for v in self._load_video(video_path, sample_rate, stride):
+            # v: (1, C, T, H, W)
+            if crop_face:
+                if not FaceXZooFaceDetector.inited:
+                    Path(".marlin").mkdir(exist_ok=True)
+                    FaceXZooFaceDetector.init(
+                        face_sdk_path=FaceXZooFaceDetector.install(os.path.join(".marlin", "FaceXZoo")),
+                        device=detector_device or self.device
+                    )
+                v = self._crop_face(v)
+            assert v.shape[3:] == (224, 224)
+            features.append(self.extract_features(v, keep_seq=keep_seq))
+
+        features = torch.cat(features)  # (N, 768)
+        reader = torchvision.io.VideoReader(video_path)
+        fps = reader.get_metadata()["video"]["fps"][0]
+        audio, sr = audio_load(audio_path)
+        audio_features = []
+        for i in range(features.shape[0]):
+            start_idx = int(((i * 32)/fps) * sr)
+            audio_window = audio[start_idx:start_idx+sr]
+            audio_feat = get_mfccs(audio_window, sr)
+            audio_features.append(audio_feat)
+        audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
+        audio_features = torch.cat(audio_features, dim=0)
+        if reduction == "mean":
+            return features.mean(dim=0)
+        elif reduction == "max":
+            return features.max(dim=0)[0]
+
+        return features, audio_features
+
 
     def _load_video(self, video_path: str, sample_rate: int, stride: int) -> Generator[Tensor, None, None]:
         probe = ffmpeg.probe(video_path)
