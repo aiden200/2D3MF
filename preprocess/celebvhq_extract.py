@@ -37,6 +37,7 @@ if __name__ == '__main__':
     raw_audio_path = os.path.join(args.data_dir, "audio")
     all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
     Path(os.path.join(args.data_dir, feat_dir)).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(args.data_dir, "audio_features")).mkdir(parents=True, exist_ok=True)
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
         audio_name = video_name.split("_")[0]
@@ -53,6 +54,8 @@ if __name__ == '__main__':
             print(f"Video {video_path} error.", e)
             feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
             audio_feat = torch.zeros(10, 87, dtype=torch.float32)
+        # save video features
         np.save(save_path, feat.cpu().numpy())
-        #if audio_feat:
-        #    np.save(audio_save_path, audio_feat.cpu().numpy())
+        # save audio features
+        audio_save_path = os.path.join(args.data_dir, "audio_features", audio_name.replace(".mp3", ".npy"))
+        np.save(audio_save_path, audio_feat.cpu().numpy())
