@@ -125,37 +125,43 @@ class CelebvHqFeatures(CelebvHqBase):
         task: str,
         temporal_reduction: str,
         data_ratio: float = 1.0,
-        take_num: Optional[int] = None
+        take_num: Optional[int] = None,
+        temporal_axis: int = 1
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
+        self.temporal_axis = temporal_axis
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
-        # audio_path = os.path.join(self.data_root, "audio", extract_number(self.name_list[index]) + ".mp3")
-        # audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
-        # start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
-        # audio = audio[start_audio_idx:start_audio_idx+sr]
-        # audio_mfccs = self.get_mfccs(audio, sr)
-
-        x = torch.from_numpy(np.load(feat_path)).float()
-
-        if x.size(0) == 0:
-            x = torch.zeros(1, 768, dtype=torch.float32)
-
-        if self.temporal_reduction == "mean":
-            x = x.mean(dim=0)
-        elif self.temporal_reduction == "max":
-            x = x.max(dim=0)[0]
-        elif self.temporal_reduction == "min":
-            x = x.min(dim=0)[0]
+        audio_path = os.path.join(self.data_root, "audio_features", extract_number(self.name_list[index]) + ".npy")
+        
+        x_v = torch.from_numpy(np.load(feat_path)).float()
+        x_a = torch.from_numpy(np.load(audio_path))
+        # trim or add padding to add up to self.temporal_axis embeddings (~average video duration)
+        print("shape of x_v", x_a.dim(), x_a.shape, x_v.shape)
+        if x_a.dim() == 3:
+            if x_v.shape[0] > self.temporal_axis:
+                x_v = x_v[:self.temporal_axis]
+                x_a = x_a[:self.temporal_axis]
+            else:
+                n_pad = self.temporal_axis - x_v.shape[0]
+                x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
+                print("~~~~~ x_a chspa", x_a.shape)
+                print(torch.zeros(n_pad, x_a.shape[1], x_a.shape[2]).shape)
+                x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1], x_a.shape[2])), dim=0)
+        elif x_a.dim() == 2:
+            print("addinf new dimensions to features", x_v.shape, x_a.shape)
+            n_pad = self.temporal_axis
+            x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
+            x_a = torch.cat((x_a.unsqueeze(0), torch.zeros(n_pad, x_a.shape[0], x_a.shape[1])), dim=0)
         else:
-            raise ValueError(self.temporal_reduction)
-
+            print("Error: audio features are ill shaped")
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
 
-        return x, torch.tensor([y], dtype=torch.float).bool()
+        print("shape of", x_v.shape, x_a.shape)
+        return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
 
 
 class CelebvHqDataModule(LightningDataModule):

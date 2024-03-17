@@ -52,8 +52,9 @@ if __name__ == '__main__':
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
-            feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
-            audio_feat = torch.zeros(10, 87, dtype=torch.float32)
+            #feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
+            #audio_feat = torch.zeros(10, 87, dtype=torch.float32)
+            continue
         # save video features
         np.save(save_path, feat.cpu().numpy())
         # save audio features

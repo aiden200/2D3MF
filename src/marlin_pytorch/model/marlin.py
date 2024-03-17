@@ -179,7 +179,7 @@ class Marlin(Module):
         audio, sr = audio_load(audio_path)
         audio_features = []
         for i in range(features.shape[0]):
-            start_idx = int(((i * 32)/fps) * sr)
+            start_idx = int(((i * 30)/fps) * sr)
             audio_window = audio[start_idx:start_idx+sr]
             audio_feat = get_mfccs(audio_window, sr)
             audio_features.append(audio_feat)
@@ -189,7 +189,7 @@ class Marlin(Module):
             return features.mean(dim=0)
         elif reduction == "max":
             return features.max(dim=0)[0]
-
+        assert audio_features.shape[0] == features.shape[0], "Video and audio features do not match"
         return features, audio_features
 
 

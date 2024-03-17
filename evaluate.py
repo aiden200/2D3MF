@@ -66,7 +66,8 @@ def train_celebvhq(args, config):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             feature_dir=config["backbone"],
-            temporal_reduction=config["temporal_reduction"]
+            temporal_reduction=config["temporal_reduction"],
+            temporal_axis=temporal_axis
         )
 
     if args.skip_train:
