@@ -58,5 +58,5 @@ if __name__ == '__main__':
         # save video features
         np.save(save_path, feat.cpu().numpy())
         # save audio features
-        audio_save_path = os.path.join(args.data_dir, "audio_features", audio_name.replace(".mp3", ".npy"))
+        audio_save_path = os.path.join(args.data_dir, "audio_features", video_name.replace(".mp4", ".npy"))
         np.save(audio_save_path, audio_feat.cpu().numpy())

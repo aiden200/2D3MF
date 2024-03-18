@@ -129,21 +129,17 @@ class Classifier(LightningModule):
             
         #now we need to seperate it back to normal (B, E) -> (B,T,E)
         #x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
-        print("====> shape of embedding:", x_v.shape, x_a.shape)
         x_a = x_a.view((x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
-        print("shape of audio", x_a.shape)
         # x_v = x_v.permute(0,2,1)
         # x_a = x_a.permute(0,2,1)
         
         # x_v = self.video_model_cnn.forward_stage1(x_v)
         x_a = self.audio_model_cnn.forward(x_a)
-        print("shape of audio cnn features", x_a.shape)
         x_a = x_a.view((x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-        print("after reshaping", x_a.shape)
+        
         x_v = self.project_down(x_v)
     
         # x_a = x_a.permute(0,2,1)
-        print(x_a.shape, x_v.shape)
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
