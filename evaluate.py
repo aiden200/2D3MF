@@ -119,7 +119,7 @@ def evaluate_celebvhq(args, ckpt, dm):
     # collect ground truth
     ys = torch.zeros_like(preds, dtype=torch.bool)
 
-    for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+    for i, (_, y, _) in enumerate(tqdm(dm.test_dataloader())):
         # print(ys, y)
         ys[i * args.batch_size: (i + 1) * args.batch_size] = y
     # print(y.shape, ys.shape)

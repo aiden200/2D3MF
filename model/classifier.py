@@ -195,7 +195,7 @@ class Classifier(LightningModule):
         return loss_dict["loss"]
 
     def predict_step(self, batch: Tensor, batch_idx: int, dataloader_idx: Optional[int] = None) -> Any:
-        return self(batch[0])
+        return self(batch[0], batch[2])
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.learning_rate, betas=(0.5, 0.9))
