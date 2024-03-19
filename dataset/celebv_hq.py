@@ -2,7 +2,9 @@ import os
 from abc import ABC, abstractmethod
 from itertools import islice
 from typing import Optional
+from collections import deque
 
+import cv2
 import ffmpeg
 import numpy as np
 import torch
@@ -70,8 +72,24 @@ class FTDataset(CelebvHqBase):
         probe = ffmpeg.probe(video_path)["streams"][0]
         n_frames = int(probe["nb_frames"])
         
+        video, real_t = self._load_video(video_path, self.temporal_sample_rate, stride=self.clip_frames, temporal=self.temporal_axis)
+        #(temporal, T, C, H, W)
+        audio_path = os.path.join(self.data_root, "audio_features", self.name_list[index] + ".npy")
+        if os.path.exists(audio_path):
+            audio = torch.from_numpy(np.load(audio_path))
+            if audio.shape[0] > self.temporal_axis:
+                audio = audio[:self.temporal_axis]
+        else:
+            audio = self._load_audio(audio_path, video_path, real_t)
+        #(T, C-10, S-87)
+        if audio.shape[0] < self.temporal_axis:
+            padding = torch.zeros((self.temporal_axis - audio.shape[0], audio.shape[1], audio.shape[2]))
+            audio = torch.concatenate((audio, padding), axis=0)
+        # print(audio.shape, video.shape)
         ## this is for double the time
-
+        assert video.shape[0] == self.temporal_axis, f"Video features are not of the right shape {video.shape[0]} != {self.temporal_axis}"
+        assert audio.shape[0] == self.temporal_axis, f"Audio features are not of the right shape {audio.shape[0]} != {self.temporal_axis}"
+        return video, torch.tensor([y], dtype=torch.float).bool(), audio
         temporal_frames = self.clip_frames*self.temporal_axis
 
         if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
@@ -96,12 +114,11 @@ class FTDataset(CelebvHqBase):
         for frame in islice(reader, 0, self.clip_frames * sample_rate, sample_rate):
             frames.append(frame["data"])
         
-        print(frames[0].shape, len(frames))
 
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
         
-        print(n_frames, video.shape)
+        # print(n_frames, video.shape)
         # clip_frames = how many frames
         
         assert video.shape[1] == self.clip_frames, video_path
@@ -116,6 +133,77 @@ class FTDataset(CelebvHqBase):
     def get_mfccs(self, y, sr):
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)
         return mfcc
+    
+    
+    def _load_audio(self, audio_path: str, video_path: str, temporal_size: int):
+        reader = torchvision.io.VideoReader(video_path)
+        fps = reader.get_metadata()["video"]["fps"][0]
+        # print(reader.get_metadata()["video"])
+        audio, sr = audio_load(audio_path)
+        audio_features = []
+        # print(audio.shape)
+        for i in range(temporal_size):
+            start_idx = i * sr
+            audio_window = audio[start_idx:start_idx+sr]
+
+            audio_feat = self.get_mfccs(audio_window, sr)
+            audio_features.append(audio_feat)
+        audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
+        audio_features = torch.cat(audio_features, dim=0)
+        return audio_features
+
+    
+    def _load_video(self, video_path: str, sample_rate: int, stride: int, temporal:int):
+        probe = ffmpeg.probe(video_path)
+        total_frames = int(probe["streams"][0]["nb_frames"])
+        if total_frames <= self.clip_frames:
+            video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
+            # pad frames to 16
+            v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
+            assert v.shape[0] == self.clip_frames
+            return v.permute(1, 0, 2, 3)#.to(self.device)
+        elif total_frames <= self.clip_frames * sample_rate:
+            video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
+            # use first 16 frames
+            if video.shape[0] < self.clip_frames:
+                # double-check the number of frames, see https://github.com/pytorch/vision/issues/2490
+                v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
+            v = video[:self.clip_frames]
+            return v.permute(1, 0, 2, 3)#.to(self.device)
+        else:
+            # extract features based on sliding window
+            cap = cv2.VideoCapture(video_path)
+            deq = deque(maxlen=self.clip_frames)
+
+            clip_start_indexes = list(range(0, total_frames - self.clip_frames * sample_rate, stride * sample_rate))
+            clip_end_indexes = [i + self.clip_frames * sample_rate - 1 for i in clip_start_indexes]
+            current_index = -1
+            
+            video_clip = torch.zeros((temporal, stride, 3, 224, 224))
+            
+            index = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                current_index += 1
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = torch.from_numpy(frame).permute(2, 0, 1) / 255  # (C, H, W)
+
+                for _ in range(sample_rate - 1):
+                    cap.read()
+                    current_index += 1
+
+                deq.append(frame)
+                if current_index in clip_end_indexes:
+                    video_clip[index] = torch.stack(list(deq))  # (T, C, H, W)
+                    # return v.permute(1, 0, 2, 3)#.to(self.device)
+                    index += 1
+                    if index == video_clip.shape[0]:
+                        break
+
+            cap.release()
+            return video_clip, index # (T, 16, 3, 224, 224)
 
 
 # For linear probing
