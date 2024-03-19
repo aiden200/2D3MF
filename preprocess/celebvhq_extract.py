@@ -48,7 +48,7 @@ if __name__ == '__main__':
             feat, audio_feat = model.extract_video_and_audio(
                 video_path, crop_face=False,
                 sample_rate=config.tubelet_size, stride=config.n_frames,
-                keep_seq=False, reduction="none", audio_path=audio_path)
+                keep_seq=False, audio_path=audio_path)
 
         except Exception as e:
             print(f"Video {video_path} error.", e)

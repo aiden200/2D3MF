@@ -45,7 +45,7 @@ class CelebvHqBase(LightningDataModule, ABC):
 
 
 # for fine-tuning
-class CelebvHq(CelebvHqBase):
+class FTDataset(CelebvHqBase):
 
     def __init__(self,
         root_dir: str,
@@ -117,7 +117,7 @@ class CelebvHq(CelebvHqBase):
 
 
 # For linear probing
-class CelebvHqFeatures(CelebvHqBase):
+class LPFeaturesDataset(CelebvHqBase):
 
     def __init__(self, root_dir: str,
         feature_dir: str,
@@ -140,7 +140,8 @@ class CelebvHqFeatures(CelebvHqBase):
         x_v = torch.from_numpy(np.load(feat_path)).float()
         x_a = torch.from_numpy(np.load(audio_path))
         # trim or add padding to add up to self.temporal_axis embeddings (~average video duration)
-        self.temporal_axis = 14 # TODO: for some reason this is not being set properly based on thre yaml
+
+        print(self.temporal_axis)
         if x_a.dim() == 3:
             if x_v.shape[0] > self.temporal_axis:
                 x_v = x_v[:self.temporal_axis]
@@ -204,21 +205,21 @@ class CelebvHqDataModule(LightningDataModule):
         self.val_dataset = None
         self.test_dataset = None
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage=None):
         if self.load_raw:
-            self.train_dataset = CelebvHq(self.root_dir, "train", self.task, self.clip_frames,
+            self.train_dataset = FTDataset(self.root_dir, "train", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis)
-            self.val_dataset = CelebvHq(self.root_dir, "val", self.task, self.clip_frames,
+            self.val_dataset = FTDataset(self.root_dir, "val", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis)
-            self.test_dataset = CelebvHq(self.root_dir, "test", self.task, self.clip_frames,
+            self.test_dataset = FTDataset(self.root_dir, "test", self.task, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis)
         else:
-            self.train_dataset = CelebvHqFeatures(self.root_dir, self.feature_dir, "train", self.task,
-                self.temporal_reduction, self.data_ratio, self.take_train)
-            self.val_dataset = CelebvHqFeatures(self.root_dir, self.feature_dir, "val", self.task,
-                self.temporal_reduction, self.data_ratio, self.take_val)
-            self.test_dataset = CelebvHqFeatures(self.root_dir, self.feature_dir, "test", self.task,
-                self.temporal_reduction, 1.0, self.take_test)
+            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "train", self.task,
+                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis)
+            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "val", self.task,
+                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis)
+            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "test", self.task,
+                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis)
 
     def train_dataloader(self):
         return DataLoader(
