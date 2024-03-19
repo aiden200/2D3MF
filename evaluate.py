@@ -5,7 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from tqdm.auto import tqdm
 
-from dataset.celebv_hq import CelebvHqDataModule
+from dataset.celebv_hq import DataModule
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
 from model.classifier import Classifier
@@ -15,7 +15,7 @@ from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
 
 
-def train_celebvhq(args, config):
+def train(args, config):
     data_path = args.data_path
     resume_ckpt = args.resume
     n_gpus = args.n_gpus
@@ -46,7 +46,7 @@ def train_celebvhq(args, config):
             args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis
         )
 
-        dm = CelebvHqDataModule(
+        dm = DataModule(
             data_path, finetune, task,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
@@ -61,7 +61,7 @@ def train_celebvhq(args, config):
             ir_layers, num_heads, temporal_axis=temporal_axis
         )
 
-        dm = CelebvHqDataModule(
+        dm = DataModule(
             data_path, finetune, task,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
@@ -103,7 +103,7 @@ def train_celebvhq(args, config):
     return ckpt_callback.best_model_path, dm
 
 
-def evaluate_celebvhq(args, ckpt, dm):
+def eval_dataset(args, ckpt, dm):
     print("Load checkpoint", ckpt)
     model = Classifier.load_from_checkpoint(ckpt)
     accelerator = "cpu" if args.n_gpus == 0 else "gpu"
@@ -141,10 +141,10 @@ def evaluate(args):
     config = read_yaml(args.config)
     dataset_name = config["dataset"]
 
-    if dataset_name == "celebvhq":
-        ckpt, dm = train_celebvhq(args, config)
+    if dataset_name == "celebvhq": # change
+        ckpt, dm = train(args, config)
         # print(f"ckpt: {ckpt}, dm: {dm}")
-        evaluate_celebvhq(args, ckpt, dm)
+        eval_dataset(args, ckpt, dm)
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 

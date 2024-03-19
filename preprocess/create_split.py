@@ -1,5 +1,6 @@
 import os
 import random
+import argparse
 
 def split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
     """
@@ -43,8 +44,10 @@ def split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
     write_filenames(val_files, os.path.join(directory, 'val.txt'))
 
 if __name__ == "__main__":
-    # Example usage
-    current_file_path = os.path.dirname(os.path.abspath(__file__))
-    directory = current_file_path
-    os.path.join(current_file_path, "yt_mixed")
-    split_dataset(os.path.join(current_file_path, "yt_mixed"))
+    #python create_split.py --data_dir /path/to/data
+    parser = argparse.ArgumentParser(description='Split dataset into train, test, and validation sets.')
+    parser.add_argument('--data_dir', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "yt_mixed"),
+                        help='Directory where the data is stored.')
+    args = parser.parse_args()
+
+    split_dataset(args.data_dir)

@@ -17,7 +17,7 @@ from util.misc import sample_indexes, read_text, read_json
 
 from dataset.utils import *
 
-class CelebvHqBase(LightningDataModule, ABC):
+class BaseDataSetLoader(LightningDataModule, ABC):
 
     def __init__(self, data_root: str, split: str, task: str, data_ratio: float = 1.0, take_num: int = None):
         super().__init__()
@@ -29,7 +29,6 @@ class CelebvHqBase(LightningDataModule, ABC):
 
         self.name_list = list(
             filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}.txt")).split("\n")))
-        # self.metadata = read_json(os.path.join(data_root, "celebvhq_info.json"))
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
@@ -47,7 +46,7 @@ class CelebvHqBase(LightningDataModule, ABC):
 
 
 # for fine-tuning
-class FTDataset(CelebvHqBase):
+class FTDataset(BaseDataSetLoader):
 
     def __init__(self,
         root_dir: str,
@@ -85,51 +84,11 @@ class FTDataset(CelebvHqBase):
         if audio.shape[0] < self.temporal_axis:
             padding = torch.zeros((self.temporal_axis - audio.shape[0], audio.shape[1], audio.shape[2]))
             audio = torch.concatenate((audio, padding), axis=0)
-        # print(audio.shape, video.shape)
-        ## this is for double the time
+
         assert video.shape[0] == self.temporal_axis, f"Video features are not of the right shape {video.shape[0]} != {self.temporal_axis}"
         assert audio.shape[0] == self.temporal_axis, f"Audio features are not of the right shape {audio.shape[0]} != {self.temporal_axis}"
         return video, torch.tensor([y], dtype=torch.float).bool(), audio
-        temporal_frames = self.clip_frames*self.temporal_axis
-
-        if n_frames <= self.clip_frames: # not needed (as long as our videos are > 0.5sec)
-            video = read_video(video_path, channel_first=True).video / 255
-            # pad frames to 16
-            video = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
-            video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
-            return video, torch.tensor(y, dtype=torch.long)
-        elif n_frames <= self.clip_frames * self.temporal_sample_rate: # not needed (as long as our videos are > 1sec)
-            # reset a lower temporal sample rate
-            sample_rate = n_frames // self.clip_frames
-        else:
-            sample_rate = self.temporal_sample_rate
-        # sample frames
-            
-        ## clip_frames hyperparameters
-        video_indexes = sample_indexes(n_frames, self.clip_frames, sample_rate)
-        reader = torchvision.io.VideoReader(video_path)
-        fps = reader.get_metadata()["video"]["fps"][0]
-        reader.seek(video_indexes[0].item() / fps, True)
-        frames = []
-        for frame in islice(reader, 0, self.clip_frames * sample_rate, sample_rate):
-            frames.append(frame["data"])
         
-
-        video = torch.stack(frames) / 255  # (T, C, H, W)
-        video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
-        
-        # print(n_frames, video.shape)
-        # clip_frames = how many frames
-        
-        assert video.shape[1] == self.clip_frames, video_path
-        
-        audio, sr = audio_load(audio_path) # audio has been resampled to 44100 Hz
-        start_audio_idx = int((video_indexes[0]/30)*fps) # end_idx -> int((video_indexes[-1]/30)*sr)
-        audio = audio[start_audio_idx:start_audio_idx+sr]
-        audio_mfccs = self.get_mfccs(audio, sr)
-        # print(f"Video shape: {video.shape}")
-        return video, torch.tensor([y], dtype=torch.float).bool(), torch.tensor(audio_mfccs) # here we need to return the audio features too
-
     def get_mfccs(self, y, sr):
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)
         return mfcc
@@ -207,7 +166,7 @@ class FTDataset(CelebvHqBase):
 
 
 # For linear probing
-class LPFeaturesDataset(CelebvHqBase):
+class LPFeaturesDataset(BaseDataSetLoader):
 
     def __init__(self, root_dir: str,
         feature_dir: str,
@@ -250,7 +209,7 @@ class LPFeaturesDataset(CelebvHqBase):
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
 
 
-class CelebvHqDataModule(LightningDataModule):
+class DataModule(LightningDataModule):
 
     def __init__(self, root_dir: str,
         load_raw: bool,
