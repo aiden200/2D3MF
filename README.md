@@ -45,11 +45,6 @@ This repo is the implementation for the paper
 
 ## Repository Structure
 
-The repository contains 2 parts:
-
-- Explaining the dataset used
-- The implementation for the paper including training and evaluation scripts.
-
 ```
 .
 ├── assets                # Images for README.md
@@ -70,7 +65,7 @@ The repository contains 2 parts:
 
 # below is for the paper implementation
 ├── configs              # Configs for experiments settings
-├── model                # Marlin models
+├── model                # 2D3MF & Marlin models
 ├── preprocess           # Preprocessing scripts
 ├── dataset              # Dataloaders
 ├── utils                # Utility functions
@@ -80,200 +75,51 @@ The repository contains 2 parts:
 
 ```
 
-## Use `marlin-pytorch` for Feature Extraction
+## Installing and running our model
+
+
+## Paper Implementation
+
+### Feature Extraction - MARLIN
 
 Requirements:
 
-- Python >= 3.6, < 3.12
-- PyTorch >= 1.8
+- Python >= 3.7, < 3.12
+- PyTorch ~= 1.11
+- Torchvision ~= 0.12
 - ffmpeg
 
-Install from PyPI:
+Install MARLIN (our feature extractor) from PyPI:
 
 ```bash
 pip install marlin-pytorch
 ```
 
-Load MARLIN model from online
+For more details, see [MARLIN_MODEL_ZOO.md](MARLIN_MODEL_ZOO.md).
 
-```python
-from marlin_pytorch import Marlin
-# Load MARLIN model from GitHub Release
-model = Marlin.from_online("marlin_vit_base_ytf")
-```
-
-Load MARLIN model from file
-
-```python
-from marlin_pytorch import Marlin
-# Load MARLIN model from local file
-model = Marlin.from_file("marlin_vit_base_ytf", "path/to/marlin.pt")
-# Load MARLIN model from the ckpt file trained by the scripts in this repo
-model = Marlin.from_file("marlin_vit_base_ytf", "path/to/marlin.ckpt")
-```
-
-Current model name list:
-
-- `marlin_vit_small_ytf`: ViT-small encoder trained on YTF dataset. Embedding 384 dim.
-- `marlin_vit_base_ytf`: ViT-base encoder trained on YTF dataset. Embedding 768 dim.
-- `marlin_vit_large_ytf`: ViT-large encoder trained on YTF dataset. Embedding 1024 dim.
-
-For more details, see [MODEL_ZOO.md](MODEL_ZOO.md).
-
-When MARLIN model is retrieved from GitHub Release, it will be cached in `.marlin`. You can remove marlin cache by
-
-```python
-from marlin_pytorch import Marlin
-Marlin.clean_cache()
-```
-
-Extract features from cropped video file
-
-```python
-# Extract features from facial cropped video with size (224x224)
-features = model.extract_video("path/to/video.mp4")
-print(features.shape)  # torch.Size([T, 768]) where T is the number of windows
-
-# You can keep output of all elements from the sequence by setting keep_seq=True
-features = model.extract_video("path/to/video.mp4", keep_seq=True)
-print(features.shape)  # torch.Size([T, k, 768]) where k = T/t * H/h * W/w = 8 * 14 * 14 = 1568
-```
-
-Extract features from in-the-wild video file
-
-```python
-# Extract features from in-the-wild video with various size
-features = model.extract_video("path/to/video.mp4", crop_face=True)
-print(features.shape)  # torch.Size([T, 768])
-```
-
-Extract features from video clip tensor
-
-```python
-# Extract features from clip tensor with size (B, 3, 16, 224, 224)
-x = ...  # video clip
-features = model.extract_features(x)  # torch.Size([B, k, 768])
-features = model.extract_features(x, keep_seq=False)  # torch.Size([B, 768])
-```
-
-## Paper Implementation
-
-### Requirements
-
-- Python >= 3.7, < 3.12
-- PyTorch ~= 1.11
-- Torchvision ~= 0.12
 
 ### Installation
 
-Firstly, make sure you have installed PyTorch and Torchvision with or without CUDA.
+Install PyTorch from the [official website](https://pytorch.org/get-started/locally/)
 
 Clone the repo and install the requirements:
 
 ```bash
-git clone https://github.com/ControlNet/MARLIN.git
-cd MARLIN
+git clone https://github.com/aiden200/2D3MF
+cd 2D3MF
 pip install -r requirements.txt
 ```
 
-### MARLIN Pretraining
+### Training
 
-Download the [YoutubeFaces](https://www.cs.tau.ac.il/~wolf/ytfaces/) dataset (only `frame_images_DB` is required).
-
-Download the face parsing model from [face_parsing.farl.lapa](https://github.com/FacePerceiver/facer/releases/download/models-v1/face_parsing.farl.lapa.main_ema_136500_jit191.pt)
-and put it in `utils/face_sdk/models/face_parsing/face_parsing_1.0`.
-
-Download the VideoMAE pretrained [checkpoint](https://github.com/ControlNet/MARLIN/releases/misc)
-for initializing the weights. (ps. They updated their models in this
-[commit](https://github.com/MCG-NJU/VideoMAE/commit/2b56a75d166c619f71019e3d1bb1c4aedafe7a90), but we are using the
-old models which are not shared anymore by the authors. So we uploaded this model by ourselves.)
-
-Then run scripts to process the dataset:
-
-```bash
-python preprocess/ytf_preprocess.py --data_dir /path/to/youtube_faces --max_workers 8
-```
-
-After processing, the directory structure should be like this:
-
-```
-├── YoutubeFaces
-│   ├── frame_images_DB
-│   │   ├── Aaron_Eckhart
-│   │   │   ├── 0
-│   │   │   │   ├── 0.555.jpg
-│   │   │   │   ├── ...
-│   │   │   ├── ...
-│   │   ├── ...
-│   ├── crop_images_DB
-│   │   ├── Aaron_Eckhart
-│   │   │   ├── 0
-│   │   │   │   ├── 0.555.jpg
-│   │   │   │   ├── ...
-│   │   │   ├── ...
-│   │   ├── ...
-│   ├── face_parsing_images_DB
-│   │   ├── Aaron_Eckhart
-│   │   │   ├── 0
-│   │   │   │   ├── 0.555.npy
-│   │   │   │   ├── ...
-│   │   │   ├── ...
-│   │   ├── ...
-│   ├── train_set.csv
-│   ├── val_set.csv
-```
-
-Then, run the training script:
-
-```bash
-python train.py \
-    --config config/pretrain/marlin_vit_base.yaml \
-    --data_dir /path/to/youtube_faces \
-    --n_gpus 4 \
-    --num_workers 8 \
-    --batch_size 16 \
-    --epochs 2000 \
-    --official_pretrained /path/to/videomae/checkpoint.pth
-```
-
-After trained, you can load the checkpoint for inference by
-
-```python
-from marlin_pytorch import Marlin
-from marlin_pytorch.config import register_model_from_yaml
-
-register_model_from_yaml("my_marlin_model", "path/to/config.yaml")
-model = Marlin.from_file("my_marlin_model", "path/to/marlin.ckpt")
-```
-
-## Evaluation
-
-<details>
-<summary>CelebV-HQ</summary>
-
-#### 1. Download the dataset
-
-Download dataset from [CelebV-HQ](https://github.com/CelebV-HQ/CelebV-HQ) and the file structure should be like this:
-
-```
-├── CelebV-HQ
-│   ├── downloaded
-│   │   ├── ***.mp4
-│   │   ├── ...
-│   ├── celebvhq_info.json
-│   ├── ...
-```
+#### 1. Download the Faceforensics ++ dataset
 
 #### 2. Preprocess the dataset
 
 Crop the face region from the raw video and split the train val and test sets.
 
 ```bash
-python preprocess/preprocess_clips.py --data_dir /path/to/CelebV-HQ
-
-
-
-python3 preprocess/preprocess_clips.py --data_dir . --yt /home/aiden/Documents/cs/DeepFake-Video-Detection/pull_datasets/FaceForensics/dataset/yt_sequences
+python3 preprocess/preprocess_clips.py --data_dir . --yt /path/to/yt_data
 ```
 
 Create split
@@ -286,17 +132,19 @@ python create_split.py --data_dir /path/to/data
 Extract MARLIN features from the cropped video and saved to `<backbone>` directory in `CelebV-HQ` directory.
 
 ```bash
-python preprocess/extract_features.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir /path/to/data --backbone marlin_vit_base_ytf
 
+ex:
 python preprocess/extract_features.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf
-
 ```
+
+
 
 #### 4. Train and evaluate
 
-Train and evaluate the model adapted from MARLIN to CelebV-HQ.
+Train and evaluate the 2D3MF model..
 
-Please use the configs in `config/celebv_hq/*/*.yaml` as the config file.
+Please use the configs in `config/*.yaml` as the config file.
 
 ```bash
 python evaluate.py \
@@ -328,22 +176,13 @@ This project is under the CC BY-NC 4.0 license. See [LICENSE](LICENSE) for detai
 
 ## References
 
-If you find this work useful for your research, please consider citing it.
+Please cite our work!
 
 ```bibtex
-@inproceedings{cai2022marlin,
-  title = {MARLIN: Masked Autoencoder for facial video Representation LearnINg},
-  author = {Cai, Zhixi and Ghosh, Shreya and Stefanov, Kalin and Dhall, Abhinav and Cai, Jianfei and Rezatofighi, Hamid and Haffari, Reza and Hayat, Munawar},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year = {2023},
-  month = {June},
-  pages = {1493-1504},
-  doi = {10.1109/CVPR52729.2023.00150},
-  publisher = {IEEE},
-}
+
 ```
 
 ## Acknowledgements
 
-Some code about model is based on [MCG-NJU/VideoMAE](https://github.com/MCG-NJU/VideoMAE). The code related to preprocessing
-is borrowed from [JDAI-CV/FaceX-Zoo](https://github.com/JDAI-CV/FaceX-Zoo).
+Some code about model is based on [ControlNet/MARLIN](https://github.com/ControlNet/MARLIN). The code related to middle fusion
+is from [Self-attention fusion for audiovisual emotion recognition with incomplete data](https://arxiv.org/abs/2201.11095).
