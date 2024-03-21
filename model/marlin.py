@@ -1,3 +1,17 @@
+'''
+Credit to
+@inproceedings{cai2022marlin,
+  title = {MARLIN: Masked Autoencoder for facial video Representation LearnINg},
+  author = {Cai, Zhixi and Ghosh, Shreya and Stefanov, Kalin and Dhall, Abhinav and Cai, Jianfei and Rezatofighi, Hamid and Haffari, Reza and Hayat, Munawar},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2023},
+  month = {June},
+  pages = {1493-1504},
+  doi = {10.1109/CVPR52729.2023.00150},
+  publisher = {IEEE},
+}
+'''
+
 import itertools
 import math
 from typing import Optional, Union, Sequence, Tuple
