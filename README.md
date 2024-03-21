@@ -1,4 +1,4 @@
-# 2D3MF: Deepfake Detection using Multi Modal Fusion
+# 2D3MF: Deepfake Detection using Multi Modal Middle Fusion
 
 <!--<div>-->
 <!--    <img src="assets/teaser.svg">-->
