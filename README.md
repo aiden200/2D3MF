@@ -269,11 +269,16 @@ Download dataset from [CelebV-HQ](https://github.com/CelebV-HQ/CelebV-HQ) and th
 Crop the face region from the raw video and split the train val and test sets.
 
 ```bash
-python preprocess/celebvhq_preprocess.py --data_dir /path/to/CelebV-HQ
+python preprocess/preprocess_clips.py --data_dir /path/to/CelebV-HQ
 
 
 
-python3 preprocess/celebvhq_preprocess.py --data_dir . --yt /home/aiden/Documents/cs/DeepFake-Video-Detection/pull_datasets/FaceForensics/dataset/yt_sequences
+python3 preprocess/preprocess_clips.py --data_dir . --yt /home/aiden/Documents/cs/DeepFake-Video-Detection/pull_datasets/FaceForensics/dataset/yt_sequences
+```
+
+Create split
+```bash
+python create_split.py --data_dir /path/to/data
 ```
 
 #### 3. Extract MARLIN features (Optional, if linear probing)
@@ -281,9 +286,9 @@ python3 preprocess/celebvhq_preprocess.py --data_dir . --yt /home/aiden/Document
 Extract MARLIN features from the cropped video and saved to `<backbone>` directory in `CelebV-HQ` directory.
 
 ```bash
-python preprocess/celebvhq_extract.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
 
-python preprocess/celebvhq_extract.py --data_dir yt_mixed --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf
 
 ```
 
@@ -308,7 +313,7 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml     --data_path yt_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt --epochs 500
+python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml     --data_path yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt --epochs 500
 
 
 --skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt

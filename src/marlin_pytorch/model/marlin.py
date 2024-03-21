@@ -153,7 +153,6 @@ class Marlin(Module):
     @torch.no_grad()
     def extract_video_and_audio(self, video_path: str, crop_face: bool = False, sample_rate: int = 2,
         stride: int = 16,
-        reduction: str = "none",
         keep_seq: bool = False,
         detector_device: Optional[str] = None,
         audio_path: str = None
@@ -179,17 +178,14 @@ class Marlin(Module):
         audio, sr = audio_load(audio_path)
         audio_features = []
         for i in range(features.shape[0]):
-            start_idx = int(((i * 32)/fps) * sr)
+            start_idx = int(((i * 30)/fps) * sr)
             audio_window = audio[start_idx:start_idx+sr]
             audio_feat = get_mfccs(audio_window, sr)
             audio_features.append(audio_feat)
         audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
         audio_features = torch.cat(audio_features, dim=0)
-        if reduction == "mean":
-            return features.mean(dim=0)
-        elif reduction == "max":
-            return features.max(dim=0)[0]
 
+        assert audio_features.shape[0] == features.shape[0], "Video and audio features do not match"
         return features, audio_features
 
 

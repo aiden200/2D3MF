@@ -61,7 +61,7 @@ class Classifier(LightningModule):
         self.hidden_layers_audio = 128 # placeholder
         self.out_dim = 128
 
-        self.audio_model_cnn = AudioCNNPool(num_classes=1, 
+        self.audio_model_cnn = AudioCNNPool(num_classes=128, 
                                             h_dim=self.hidden_layers_audio,
                                             out_dim=self.out_dim)
         self.video_model_cnn = VideoCnnPool(num_classes=1, 
@@ -115,31 +115,33 @@ class Classifier(LightningModule):
 
 
     def forward(self, x_v, x_a):
-        #(B, C, T, H, W) -> divide T by temporal_axis
-
-        # slice audio too
+        # print(x_v.shape, x_a.shape)
+        
         if self.model is not None:
-            # (split*B, C, T//2, H, W)
-            x_v_split = x_v.view((self.temporal_axis * x_v.shape[0], x_v.shape[1], x_v.shape[2]//2, x_v.shape[3], x_v.shape[4]))
+
+            # (B, temporal, T, C, H, W)
+            x_v = x_v.permute(0, 1, 3, 2, 4, 5)
+            # Encoder takes in (C, T, H, W)
+            x_v_split = x_v.view((x_v.shape[1] * x_v.shape[0], x_v.shape[2], x_v.shape[3], x_v.shape[4], x_v.shape[5]))
             x_v = self.model.extract_features(x_v_split, True)
+            #now we need to seperate it back to normal (B, E) -> (B,T,E)
+            x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
         else:
             x_v = x_v
+            #now we need to seperate it back to normal (B, E) -> (B,T,E)
             
-        #now we need to seperate it back to normal (B, E) -> (B,T,E)
-        x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
-
-        # print("shape of embedding:", x_v.shape, x_a.shape)
-
+        #x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
         # x_v = x_v.permute(0,2,1)
         # x_a = x_a.permute(0,2,1)
+        x_a = x_a.view((x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
         
         # x_v = self.video_model_cnn.forward_stage1(x_v)
-        x_a = self.audio_model_cnn.forward_stage1(x_a)
-
+        x_a = self.audio_model_cnn.forward(x_a)
+        x_a = x_a.view((x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
+        
         x_v = self.project_down(x_v)
     
-        x_a = x_a.permute(0,2,1)
-        # print(x_a.shape, x_v.shape)
+        # x_a = x_a.permute(0,2,1)
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
@@ -195,7 +197,7 @@ class Classifier(LightningModule):
         return loss_dict["loss"]
 
     def predict_step(self, batch: Tensor, batch_idx: int, dataloader_idx: Optional[int] = None) -> Any:
-        return self(batch[0])
+        return self(batch[0], batch[2])
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.learning_rate, betas=(0.5, 0.9))
@@ -214,10 +216,4 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
 
 
 
-#from torchsummary import summary
-#model = AudioCNNPool().to('cuda:0')
-#dummy_input = torch.randn((1, 10, 87)).to('cuda:0')
-#xx = model(dummy_input)
-#print("output shape", xx.shape)
-#summary(model, (10, 87))
 
