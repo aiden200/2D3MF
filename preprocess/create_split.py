@@ -67,12 +67,12 @@ def combine_features(directory):
     # Copy files from audio_features to the combined directory
     for filename in os.listdir(audio_features_dir):
         if filename.endswith('.npy'):
-            shutil.copy(os.path.join(audio_features_dir, filename), os.path.join(combined_dir, f"{filename[:-4]}-1.npy"))
+            shutil.copy(os.path.join(audio_features_dir, filename), os.path.join(combined_dir, filename))
 
     # Copy files from audio_features_real to the combined directory
     for filename in os.listdir(audio_features_real_dir):
         if filename.endswith('.npy'):
-            shutil.copy(os.path.join(audio_features_real_dir, filename), os.path.join(combined_dir, f"{filename[:-4]}-0.npy"))
+            shutil.copy(os.path.join(audio_features_real_dir, filename), os.path.join(combined_dir, filename))
 
     video_features_dir = os.path.join(directory, 'marlin_vit_small_ytf')
     video_features_real_dir = os.path.join(directory, 'marlin_vit_small_ytf_real')
@@ -91,66 +91,41 @@ def combine_features(directory):
         if filename.endswith('.npy'):
             shutil.copy(os.path.join(video_features_real_dir, filename), os.path.join(combined_dir, f"{filename[:-4]}-0.npy"))
 
-
+    adrian_ds_split_dataset(os.path.join(directory, new_dir))
 
 def adrian_ds_split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
-    """
-    Split files in the /downloaded directory into train, test, and validation sets.
-    
-    Args:
-    - directory (str): Path to the directory containing the /downloaded subdirectory.
-    - test_ratio (float): Proportion of the dataset to include in the test split.
-    - val_ratio (float): Proportion of the dataset to include in the validation split.
-    """
-    downloaded_dir = os.path.join(directory, 'audio_features')
-    af_fake = [f"{f[:-4]}-1" for f in os.listdir(downloaded_dir) if f.endswith('.npy')]
-
-    downloaded_dir = os.path.join(directory, 'audio_features_real')
-    af_real = [f"{f[:-4]}-0" for f in os.listdir(downloaded_dir) if f.endswith('.npy')]
 
     downloaded_dir = os.path.join(directory, 'marlin_vit_small_ytf')
-    vit_fake = [f"{f[:-4]}-1" for f in os.listdir(downloaded_dir) if f.endswith('.npy')]
-
-    downloaded_dir = os.path.join(directory, 'marlin_vit_small_ytf_real')
-    vit_real = [f"{f[:-4]}-0" for f in os.listdir(downloaded_dir) if f.endswith('.npy')]    
-
-    print(f"Audio Fake: {len(af_fake)}, Audio Real: {len(af_real)}\nVideo fake: {len(vit_fake)}, Video Real: {len(vit_real)}")
-
-    #Decrease the fake videos for balance
-
-    af = af_fake + af_real
-    vit = vit_fake + vit_real
-
-    random.shuffle(af)
-    random.shuffle(vit)
+    files = [f[:-4] for f in os.listdir(downloaded_dir) if f.endswith('.npy')]
+    # random.shuffle(files)
     
-    # num_files = len(files)
-    # num_test = int(num_files * test_ratio)
-    # num_val = int(num_files * val_ratio)
+    num_files = len(files)
+    num_test = int(num_files * test_ratio)
+    num_val = int(num_files * val_ratio)
     
-    # test_files = files[:num_test]
-    # val_files = files[num_test:num_test + num_val]
-    # train_files = files[num_test + num_val:]
+    test_files = files[:num_test]
+    val_files = files[num_test:num_test + num_val]
+    train_files = files[num_test + num_val:]
     
-    # val_dp = test_files[:2]
+    val_dp = test_files[:2]
 
-    # random.shuffle(test_files)
-    # random.shuffle(val_files)
-    # random.shuffle(train_files)
+    random.shuffle(test_files)
+    random.shuffle(val_files)
+    random.shuffle(train_files)
 
-    # assert(test_files[:2] != val_dp)
+    assert(test_files[:2] != val_dp)
 
 
-    # # Function to write filenames to a file
-    # def write_filenames(filenames, file_path):
-    #     with open(file_path, 'w') as file:
-    #         for filename in filenames:
-    #             file.write(f"{filename[:-4]}\n")  # Remove the '.mp4' extension
+    # Function to write filenames to a file
+    def write_filenames(filenames, file_path):
+        with open(file_path, 'w') as file:
+            for filename in filenames:
+                file.write(f"{filename}\n")
     
-    # # Write the splits to their respective files
-    # write_filenames(train_files, os.path.join(directory, 'train.txt'))
-    # write_filenames(test_files, os.path.join(directory, 'test.txt'))
-    # write_filenames(val_files, os.path.join(directory, 'val.txt'))
+    # Write the splits to their respective files
+    write_filenames(train_files, os.path.join(directory, 'train.txt'))
+    write_filenames(test_files, os.path.join(directory, 'test.txt'))
+    write_filenames(val_files, os.path.join(directory, 'val.txt'))
 
 
 if __name__ == "__main__":
