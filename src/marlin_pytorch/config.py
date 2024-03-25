@@ -27,6 +27,9 @@ class MarlinConfig:
     ir_layers: str
     num_heads: int
     temporal_axis: int
+    audio_pe: bool
+    fusion: str
+    hidden_layers: int
 
 
 class Downloadable(ABC):
@@ -68,8 +71,9 @@ class SharedConfig(MarlinConfig):
     init_values = 0.
     tubelet_size = 2
     ir_layers = "conv"
-    num_heads= 1
-    temporal_axis =1
+    num_heads= 2
+    temporal_axis =10
+    hidden_layers = 128
 
 
 @register_model("marlin_vit_base_ytf")
@@ -84,7 +88,7 @@ class MarlinVitBaseConfig(NoArgInit, SharedConfig, Downloadable):
     full_model_url = "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_base_ytf.full.pt"
     encoder_model_url = "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_base_ytf.encoder.pt"
     ir_layers = "conv"
-    num_heads= 1
+    num_heads= 2
 
 
 
@@ -102,8 +106,8 @@ class MarlinVitSmallConfig(NoArgInit, SharedConfig, Downloadable):
     encoder_model_url = \
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_small_ytf.encoder.pt"
     ir_layers = "conv"
-    num_heads= 1
-    temporal_axis=1
+    num_heads= 2
+    temporal_axis=10
 
 @register_model("marlin_vit_large_ytf")
 @Singleton
@@ -119,8 +123,8 @@ class MarlinVitLargeConfig(NoArgInit, SharedConfig, Downloadable):
     encoder_model_url = \
         "https://github.com/ControlNet/MARLIN/releases/download/model_v1/marlin_vit_large_ytf.encoder.pt"
     ir_layers = "conv"
-    num_heads= 1
-    temporal_axis=1
+    num_heads= 2
+    temporal_axis=10
 
 def register_model_from_yaml(name: str, path: str) -> None:
     config = read_yaml(path)
