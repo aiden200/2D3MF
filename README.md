@@ -1,4 +1,5 @@
 # 2D3MF: Deepfake Detection using Multi Modal Middle Fusion
+![Architetcure](assets/architecture.png)
 
 <!--<div>-->
 <!--    <img src="assets/teaser.svg">-->
