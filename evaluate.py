@@ -27,6 +27,9 @@ def train(args, config):
     num_heads = config['num_heads']
     ir_layers = config['ir_layers']
     temporal_axis = config['temporal_axis']
+    audio_pe = config['audio_positional_encoding']
+    fusion = config['fusion']
+    hidden_layers = config['hidden_layers']
 
     if task == "appearance":
         num_classes = 40
@@ -43,7 +46,8 @@ def train(args, config):
         model = Classifier(
             num_classes, config["backbone"], True, args.marlin_ckpt, 
             "binary", config["learning_rate"], #changed this to binary
-            args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis
+            args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis,
+            audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers
         )
 
         dm = DataModule(
@@ -58,7 +62,8 @@ def train(args, config):
         model = Classifier(
             num_classes, config["backbone"], False,
             None, "binary", config["learning_rate"], args.n_gpus > 1,
-            ir_layers, num_heads, temporal_axis=temporal_axis
+            ir_layers, num_heads, temporal_axis=temporal_axis,
+            audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers
         )
 
         dm = DataModule(

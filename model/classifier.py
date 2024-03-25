@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
-from model.transformer_blocks import AttentionBlock
+from model.transformer_blocks import AttentionBlock, PositionalEncoding
 from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool
 
 import torch.nn as nn
@@ -44,7 +44,10 @@ class Classifier(LightningModule):
         learning_rate: float = 1e-4, distributed: bool = False,
         ir_layers = "conv",
         num_heads = 1,
-        temporal_axis: int = 1
+        temporal_axis: int = 1,
+        audio_pe: bool = True,
+        fusion: str = "lf",
+        hidden_layers: int = 128
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -58,16 +61,15 @@ class Classifier(LightningModule):
             self.model = None
 
         config = resolve_config(backbone)
-        print(config.encoder_embed_dim)
         
-        
+
         self.temporal_axis = temporal_axis
-        self.hidden_layers = 128
-        self.hidden_layers_audio = 128 # placeholder
+        self.hidden_layers = hidden_layers
+        # self.hidden_layers_audio = 128 #audio hidden layers= 128
         self.out_dim = 128
 
         self.audio_model_cnn = AudioCNNPool(num_classes=128, 
-                                            h_dim=self.hidden_layers_audio,
+                                            h_dim=self.hidden_layers, #audio hidden layers
                                             out_dim=self.out_dim)
         self.video_model_cnn = VideoCnnPool(num_classes=1, 
                                             input_dim=config.encoder_embed_dim, 
@@ -82,14 +84,20 @@ class Classifier(LightningModule):
             self.layer_norm2 = LayerNorm(self.hidden_layers)
             # self.fc2 = Linear(self.hidden_layers, num_classes)
 
+        self.audio_pe = None
+        if audio_pe:
+            self.audio_pe = PositionalEncoding(
+                d_model=self.hidden_layers, #audio hidden layers 
+                dropout=0.1, 
+                max_len=self.temporal_axis)
 
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers, 
-            in_dim_q=self.hidden_layers_audio, 
-            out_dim=self.hidden_layers_audio, 
+            in_dim_q=self.hidden_layers, #audio hidden layers 
+            out_dim=self.hidden_layers, #audio hidden layers 
             num_heads=num_heads)
         self.va1 = AttentionBlock(
-            in_dim_k=self.hidden_layers_audio, 
+            in_dim_k=self.hidden_layers, #audio hidden layers 
             in_dim_q=self.hidden_layers, 
             out_dim=self.hidden_layers, 
             num_heads=num_heads)   
@@ -102,7 +110,9 @@ class Classifier(LightningModule):
         self.distributed = distributed
         self.task = task
 
-        self.lf = True
+        self.lf = False
+        if fusion == "lf":
+            self.lf = True
         # if self.lf:
         #     self.classifier_1 = nn.Sequential(
         #         nn.Linear(self.hidden_layers*2, num_classes)
@@ -120,6 +130,12 @@ class Classifier(LightningModule):
         #     self.loss_fn = BCELoss()
         #     self.acc_fn = Accuracy(task="binary", num_classes=1)
         #     self.auc_fn = AUROC(task="binary", num_classes=1)
+        
+        print(f"{'-'*30}\nHyperparameters:\n{'-'*30}\nModel: {backbone}\nFinetune: {finetune}\nTask:\
+{task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
+IR Layers: {ir_layers}\nNum Heads: {num_heads}\nTemporal Axis: {temporal_axis}\n\
+Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {self.hidden_layers}\n{'-'*30}")
+        
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -152,8 +168,13 @@ class Classifier(LightningModule):
         x_a = x_a.view((x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
         
         x_v = self.project_down(x_v)
-    
-        # x_a = x_a.permute(0,2,1)
+
+        if self.audio_pe:
+            #(B, T, E)
+            x_a = x_a.permute(1,0,2)
+            x_a = self.audio_pe(x_a)
+            x_a = x_a.permute(1,0,2)
+        
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
