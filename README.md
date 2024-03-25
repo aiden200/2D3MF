@@ -1,7 +1,7 @@
 # 2D3MF: Deepfake Detection using Multi Modal Middle Fusion
-
-<img src="assets/architecture.png" width="100" height="100">
-
+<div align="center">
+    <img src="assets/architecture.png" width="300" height="300">
+</div>
 
 <!--<div>-->
 <!--    <img src="assets/teaser.svg">-->
