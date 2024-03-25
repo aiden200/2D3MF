@@ -124,5 +124,5 @@ class AttentionBlock(nn.Module):
         
         x, a = self.attn(self.norm1_k(xk), self.norm1_q(xq))
         x = self.drop_path(x)
-        x = x +  self.drop_path(self.mlp(self.norm2(x)))
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x

@@ -31,6 +31,11 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
                                    nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
+def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
+    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
+                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
+
+
 class Classifier(LightningModule):
 
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
@@ -96,18 +101,25 @@ class Classifier(LightningModule):
         self.learning_rate = learning_rate
         self.distributed = distributed
         self.task = task
+
+        self.lf = True
+        # if self.lf:
+        #     self.classifier_1 = nn.Sequential(
+        #         nn.Linear(self.hidden_layers*2, num_classes)
+        #     )
+
         if task in "binary":
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
-        elif task == "multiclass":
-            self.loss_fn = CrossEntropyLoss()
-            self.acc_fn = Accuracy(task=task, num_classes=num_classes)
-            self.auc_fn = AUROC(task=task, num_classes=num_classes)
-        elif task == "multilabel":
-            self.loss_fn = BCELoss()
-            self.acc_fn = Accuracy(task="binary", num_classes=1)
-            self.auc_fn = AUROC(task="binary", num_classes=1)
+        # elif task == "multiclass":
+        #     self.loss_fn = CrossEntropyLoss()
+        #     self.acc_fn = Accuracy(task=task, num_classes=num_classes)
+        #     self.auc_fn = AUROC(task=task, num_classes=num_classes)
+        # elif task == "multilabel":
+        #     self.loss_fn = BCELoss()
+        #     self.acc_fn = Accuracy(task="binary", num_classes=1)
+        #     self.auc_fn = AUROC(task="binary", num_classes=1)
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -154,8 +166,10 @@ class Classifier(LightningModule):
         x_v = x_v.permute(0,2,1)
         x_a = x_a.permute(0,2,1)
 
-        x_v = self.video_model_cnn.forward_stage2(x_v)
-        x_a = self.audio_model_cnn.forward_stage2(x_a)
+
+        if not self.lf:
+            x_v = self.video_model_cnn.forward_stage2(x_v)
+            x_a = self.audio_model_cnn.forward_stage2(x_a)
 
         video_pooled = x_v.mean([-1]) #mean accross temporal dimension
         audio_pooled = x_a.mean([-1])
@@ -163,15 +177,16 @@ class Classifier(LightningModule):
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
         x1 = self.classifier_1(x)
+
         return x1.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch # video frames, label, audio mfccs
         
         y_hat = self(x_v, x_a)
-        if self.task == "multilabel":
-            y_hat = y_hat.flatten()
-            y = y.flatten()
+        # if self.task == "multilabel":
+        #     y_hat = y_hat.flatten()
+        #     y = y.flatten()
         
         loss = self.loss_fn(y_hat, y.float())
         prob = y_hat
@@ -209,10 +224,6 @@ class Classifier(LightningModule):
             }
         }
 
-
-def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
-    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
-                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
 
 

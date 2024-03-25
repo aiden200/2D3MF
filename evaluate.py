@@ -91,6 +91,8 @@ def train(args, config):
         monitor=ckpt_monitor,
         mode="max") #,
         # save_top_k=-1)
+    
+
 
     trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=accelerator, benchmark=True,
         logger=True, precision=precision, max_epochs=max_epochs,
@@ -128,7 +130,7 @@ def eval_dataset(args, ckpt, dm):
     # print(ys)
     # preds = preds.sigmoid()
     # print((preds > 0.5))
-    acc = ((preds > 0.5) == ys).float().mean()
+    acc = model.acc_fn(preds, ys)
     auc = model.auc_fn(preds, ys)
     results = {
         "acc": acc,
