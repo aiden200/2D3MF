@@ -3,12 +3,12 @@ backbone: "marlin_vit_small_ytf"
 dataset: "celebvhq"
 task: "deepfake"
 temporal_reduction: "mean"
-learning_rate: 0.80e-3
+learning_rate: 1.00e-3
 seq_mean_pool: true
 finetune: false
 ir_layers: "conv"
-num_heads: 4
+num_heads: 2
 temporal_axis: 10
-fusion: "lf"
+fusion: "mf"
 audio_positional_encoding: True
 hidden_layers: 128
