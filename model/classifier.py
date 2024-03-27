@@ -174,6 +174,10 @@ Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {sel
             x_a = x_a.permute(1,0,2)
             x_a = self.audio_pe(x_a)
             x_a = x_a.permute(1,0,2)
+
+            # x_v = x_v.permute(1,0,2)
+            # x_v = self.audio_pe(x_v)
+            # x_v = x_v.permute(1,0,2)
         
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
@@ -181,8 +185,14 @@ Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {sel
         # h_av = h_av.permute(0,2,1)
         # h_va = h_va.permute(0,2,1)
 
-        x_a = h_av + x_a
-        x_v = h_va + x_v
+        # print(h_av.shape, h_va.shape, x_a.shape, x_v.shape)
+
+
+        # x_a = h_av + x_a
+        # x_v = h_va + x_v
+
+        x_a = h_av * x_a
+        x_v = h_va * x_v
 
         x_v = x_v.permute(0,2,1)
         x_a = x_a.permute(0,2,1)
