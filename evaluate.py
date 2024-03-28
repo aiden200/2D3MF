@@ -219,7 +219,7 @@ if __name__ == '__main__':
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
     parser.add_argument("--skip_train", action="store_true", default=False,
         help="Skip training and evaluate only.")
-    parser.add_argument("--grid_search", type=bool, default=False, help="Perform a grid search and report best parameters")
+    parser.add_argument("--grid_search", action="store_true", default=False, help="Perform a grid search and report best parameters")
 
     args = parser.parse_args()
     if args.skip_train:
