@@ -10,8 +10,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
-from model.transformer_blocks import AttentionBlock
-from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool, AudioResNet18
+from model.transformer_blocks import AttentionBlock, PositionalEncoding
+from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool
 
 import torch.nn as nn
 import time
@@ -32,6 +32,11 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
                                    nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
+def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
+    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
+                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
+
+
 class Classifier(LightningModule):
 
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
@@ -41,7 +46,9 @@ class Classifier(LightningModule):
         ir_layers = "conv",
         num_heads = 1,
         temporal_axis: int = 1,
-        audio_fe = "rs18"
+        audio_pe: bool = True,
+        fusion: str = "lf",
+        hidden_layers: int = 128
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -55,22 +62,16 @@ class Classifier(LightningModule):
             self.model = None
 
         config = resolve_config(backbone)
-        print(config.encoder_embed_dim)
         
-        
+
         self.temporal_axis = temporal_axis
-        self.hidden_layers = 128
-        self.hidden_layers_audio = 128 # placeholder
+        self.hidden_layers = hidden_layers
+        # self.hidden_layers_audio = 128 #audio hidden layers= 128
         self.out_dim = 128
 
-
-        if audio_fe == "rs18": # need to set this up in config
-            self.audio_model_cnn = AudioResNet18(output_shape=self.out_dim)
-        elif audio_fe == "cnn":
-            self.audio_model_cnn = AudioCNNPool(num_classes=128, 
-                                                h_dim=self.hidden_layers_audio,
-                                                out_dim=self.out_dim)
-            
+        self.audio_model_cnn = AudioCNNPool(num_classes=128, 
+                                            h_dim=self.hidden_layers, #audio hidden layers
+                                            out_dim=self.out_dim)
         self.video_model_cnn = VideoCnnPool(num_classes=1, 
                                             input_dim=config.encoder_embed_dim, 
                                             h_dim=self.hidden_layers,
@@ -84,14 +85,20 @@ class Classifier(LightningModule):
             self.layer_norm2 = LayerNorm(self.hidden_layers)
             # self.fc2 = Linear(self.hidden_layers, num_classes)
 
+        self.audio_pe = None
+        if audio_pe:
+            self.audio_pe = PositionalEncoding(
+                d_model=self.hidden_layers, #audio hidden layers 
+                dropout=0.1, 
+                max_len=self.temporal_axis)
 
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers, 
-            in_dim_q=self.hidden_layers_audio, 
-            out_dim=self.hidden_layers_audio, 
+            in_dim_q=self.hidden_layers, #audio hidden layers 
+            out_dim=self.hidden_layers, #audio hidden layers 
             num_heads=num_heads)
         self.va1 = AttentionBlock(
-            in_dim_k=self.hidden_layers_audio, 
+            in_dim_k=self.hidden_layers, #audio hidden layers 
             in_dim_q=self.hidden_layers, 
             out_dim=self.hidden_layers, 
             num_heads=num_heads)   
@@ -104,20 +111,32 @@ class Classifier(LightningModule):
         self.distributed = distributed
         self.task = task
 
-
+        self.lf = False
+        if fusion == "lf":
+            self.lf = True
+        # if self.lf:
+        #     self.classifier_1 = nn.Sequential(
+        #         nn.Linear(self.hidden_layers*2, num_classes)
+        #     )
 
         if task in "binary":
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
-        elif task == "multiclass":
-            self.loss_fn = CrossEntropyLoss()
-            self.acc_fn = Accuracy(task=task, num_classes=num_classes)
-            self.auc_fn = AUROC(task=task, num_classes=num_classes)
-        elif task == "multilabel":
-            self.loss_fn = BCELoss()
-            self.acc_fn = Accuracy(task="binary", num_classes=1)
-            self.auc_fn = AUROC(task="binary", num_classes=1)
+        # elif task == "multiclass":
+        #     self.loss_fn = CrossEntropyLoss()
+        #     self.acc_fn = Accuracy(task=task, num_classes=num_classes)
+        #     self.auc_fn = AUROC(task=task, num_classes=num_classes)
+        # elif task == "multilabel":
+        #     self.loss_fn = BCELoss()
+        #     self.acc_fn = Accuracy(task="binary", num_classes=1)
+        #     self.auc_fn = AUROC(task="binary", num_classes=1)
+        
+        print(f"{'-'*30}\nHyperparameters:\n{'-'*30}\nModel: {backbone}\nFinetune: {finetune}\nTask:\
+{task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
+IR Layers: {ir_layers}\nNum Heads: {num_heads}\nTemporal Axis: {temporal_axis}\n\
+Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {self.hidden_layers}\n{'-'*30}")
+        
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -150,22 +169,39 @@ class Classifier(LightningModule):
         x_a = x_a.view((x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
         
         x_v = self.project_down(x_v)
-    
-        # x_a = x_a.permute(0,2,1)
+
+        if self.audio_pe:
+            #(B, T, E)
+            x_a = x_a.permute(1,0,2)
+            x_a = self.audio_pe(x_a)
+            x_a = x_a.permute(1,0,2)
+
+            # x_v = x_v.permute(1,0,2)
+            # x_v = self.audio_pe(x_v)
+            # x_v = x_v.permute(1,0,2)
+        
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
         # h_av = h_av.permute(0,2,1)
         # h_va = h_va.permute(0,2,1)
 
-        x_a = h_av + x_a
-        x_v = h_va + x_v
+        # print(h_av.shape, h_va.shape, x_a.shape, x_v.shape)
+
+
+        # x_a = h_av + x_a
+        # x_v = h_va + x_v
+
+        x_a = h_av * x_a
+        x_v = h_va * x_v
 
         x_v = x_v.permute(0,2,1)
         x_a = x_a.permute(0,2,1)
 
-        x_v = self.video_model_cnn.forward_stage2(x_v)
-        x_a = self.audio_model_cnn.forward_stage2(x_a)
+
+        if not self.lf:
+            x_v = self.video_model_cnn.forward_stage2(x_v)
+            x_a = self.audio_model_cnn.forward_stage2(x_a)
 
         video_pooled = x_v.mean([-1]) #mean accross temporal dimension
         audio_pooled = x_a.mean([-1])
@@ -173,15 +209,16 @@ class Classifier(LightningModule):
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
         x1 = self.classifier_1(x)
+
         return x1.sigmoid()
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch # video frames, label, audio mfccs
         
         y_hat = self(x_v, x_a)
-        if self.task == "multilabel":
-            y_hat = y_hat.flatten()
-            y = y.flatten()
+        # if self.task == "multilabel":
+        #     y_hat = y_hat.flatten()
+        #     y = y.flatten()
         
         loss = self.loss_fn(y_hat, y.float())
         prob = y_hat
@@ -219,10 +256,6 @@ class Classifier(LightningModule):
             }
         }
 
-
-def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
-    return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding='valid'),nn.BatchNorm1d(out_channels),
-                                   nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
 
 
