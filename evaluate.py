@@ -156,8 +156,8 @@ def evaluate(args):
         results = []
         outfile = "Grid_search_results"
         try:
-            for config in tqdm(CONFIGURATIONS):
-                batch_size, lr, epochs, fusion, attention_heads, h_dim, pe = config
+            for search in tqdm(CONFIGURATIONS):
+                batch_size, lr, epochs, fusion, attention_heads, h_dim, pe = search
                 print(f"Running grid search with the following parameters:")
                 print(f"Batch Size: {batch_size}")
                 print(f"Learning Rate: {lr}")
