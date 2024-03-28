@@ -11,7 +11,7 @@ from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from model.transformer_blocks import AttentionBlock
-from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool
+from model.multi_modal_middle_fusion import AudioCNNPool,VideoCnnPool, AudioResNet18
 
 import torch.nn as nn
 import time
@@ -20,6 +20,7 @@ import numpy as np
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
+
 
 
 
@@ -39,7 +40,8 @@ class Classifier(LightningModule):
         learning_rate: float = 1e-4, distributed: bool = False,
         ir_layers = "conv",
         num_heads = 1,
-        temporal_axis: int = 1
+        temporal_axis: int = 1,
+        audio_fe = "rs18"
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -61,9 +63,14 @@ class Classifier(LightningModule):
         self.hidden_layers_audio = 128 # placeholder
         self.out_dim = 128
 
-        self.audio_model_cnn = AudioCNNPool(num_classes=128, 
-                                            h_dim=self.hidden_layers_audio,
-                                            out_dim=self.out_dim)
+
+        if audio_fe == "rs18": # need to set this up in config
+            self.audio_model_cnn = AudioResNet18(output_shape=self.out_dim)
+        elif audio_fe == "cnn":
+            self.audio_model_cnn = AudioCNNPool(num_classes=128, 
+                                                h_dim=self.hidden_layers_audio,
+                                                out_dim=self.out_dim)
+            
         self.video_model_cnn = VideoCnnPool(num_classes=1, 
                                             input_dim=config.encoder_embed_dim, 
                                             h_dim=self.hidden_layers,
@@ -96,6 +103,9 @@ class Classifier(LightningModule):
         self.learning_rate = learning_rate
         self.distributed = distributed
         self.task = task
+
+
+
         if task in "binary":
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
