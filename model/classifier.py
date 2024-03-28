@@ -36,7 +36,7 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
                                    nn.ReLU(inplace=True), nn.MaxPool1d(2,1))
 
 
-class Classifier(LightningModule):
+class TD3MF(LightningModule):
 
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
         marlin_ckpt: Optional[str] = None,

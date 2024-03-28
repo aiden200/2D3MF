@@ -8,11 +8,13 @@ from tqdm.auto import tqdm
 from dataset.celebv_hq import DataModule
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
-from model.classifier import Classifier
+from model.classifier import TD3MF
 from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
+
+from config.grid_search_config import CONFIGURATIONS
 
 
 def train(args, config):
@@ -43,7 +45,7 @@ def train(args, config):
     if finetune:
         backbone_config = resolve_config(config["backbone"])
 
-        model = Classifier(
+        model = TD3MF(
             num_classes, config["backbone"], True, args.marlin_ckpt, 
             "binary", config["learning_rate"], #changed this to binary
             args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis,
@@ -59,7 +61,7 @@ def train(args, config):
         )
 
     else:
-        model = Classifier(
+        model = TD3MF(
             num_classes, config["backbone"], False,
             None, "binary", config["learning_rate"], args.n_gpus > 1,
             ir_layers, num_heads, temporal_axis=temporal_axis,
@@ -112,7 +114,7 @@ def train(args, config):
 
 def eval_dataset(args, ckpt, dm):
     print("Load checkpoint", ckpt)
-    model = Classifier.load_from_checkpoint(ckpt)
+    model = TD3MF.load_from_checkpoint(ckpt)
     accelerator = "cpu" if args.n_gpus == 0 else "gpu"
     trainer = Trainer(log_every_n_steps=1, devices=1 if args.n_gpus > 0 else 0, accelerator=accelerator, benchmark=True,
         logger=False, enable_checkpointing=False)
@@ -142,18 +144,65 @@ def eval_dataset(args, ckpt, dm):
         "auc": auc
     }
     print(results)
+    
+    return auc, acc
 
 
 def evaluate(args):
     config = read_yaml(args.config)
     dataset_name = config["dataset"]
+    
+    if args.grid_search:
+        results = []
+        outfile = "Grid_search_results"
+        try:
+            for config in tqdm(CONFIGURATIONS):
+                batch_size, lr, epochs, fusion, attention_heads, h_dim, pe = config
+                print(f"Running grid search with the following parameters:")
+                print(f"Batch Size: {batch_size}")
+                print(f"Learning Rate: {lr}")
+                print(f"Epochs: {epochs}")
+                print(f"Fusion: {fusion}")
+                print(f"Attention Heads: {attention_heads}")
+                print(f"Hidden Dimensions: {h_dim}")
+                print(f"Audio Positional Encoding: {pe}")
+                
+                args.epochs = epochs
+                config["learning_rate"] = lr
+                config['num_heads'] = attention_heads
+                config['audio_positional_encoding'] = pe
+                config['fusion'] = fusion
+                config['hidden_layers'] = h_dim
+                args.batch_size = batch_size
 
-    if dataset_name == "celebvhq": # change
-        ckpt, dm = train(args, config)
-        # print(f"ckpt: {ckpt}, dm: {dm}")
-        eval_dataset(args, ckpt, dm)
+                ckpt, dm = train(args, config)
+                auc, acc = eval_dataset(args, ckpt, dm)
+                results.append({
+                    "batch_size": batch_size,
+                    "learning_rate": lr,
+                    "epochs": epochs,
+                    "fusion": fusion,
+                    "attention_heads": attention_heads,
+                    "hidden_dimensions": h_dim,
+                    "audio_positional_encoding": pe,
+                    "auc": auc,
+                    "acc": acc
+                })
+                
+        except KeyboardInterrupt:
+            print("Saving results to ", outfile)
+            results.sort(key=lambda x: x['auc'], reverse=True)
+            with open(outfile, "w") as f:
+                f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
+                for result in results:
+                    f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
     else:
-        raise NotImplementedError(f"Dataset {dataset_name} not implemented")
+        if dataset_name == "celebvhq": # change
+            ckpt, dm = train(args, config)
+            # print(f"ckpt: {ckpt}, dm: {dm}")
+            eval_dataset(args, ckpt, dm)
+        else:
+            raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
 
 if __name__ == '__main__':
@@ -170,6 +219,7 @@ if __name__ == '__main__':
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
     parser.add_argument("--skip_train", action="store_true", default=False,
         help="Skip training and evaluate only.")
+    parser.add_argument("--grid_search", type=bool, default=False, help="Perform a grid search and report best parameters")
 
     args = parser.parse_args()
     if args.skip_train:
