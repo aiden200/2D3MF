@@ -189,13 +189,13 @@ def evaluate(args):
                     "acc": acc
                 })
                 
-        except KeyboardInterrupt:
+        except Exception:
             print("Saving results to ", outfile)
-            results.sort(key=lambda x: x['auc'], reverse=True)
-            with open(outfile, "w") as f:
-                f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
-                for result in results:
-                    f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
+        results.sort(key=lambda x: x['auc'], reverse=True)
+        with open(outfile, "w") as f:
+            f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
+            for result in results:
+                f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
     else:
         if dataset_name == "celebvhq": # change
             ckpt, dm = train(args, config)
