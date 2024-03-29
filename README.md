@@ -1,4 +1,5 @@
 # 2D3MF: Deepfake Detection using Multi Modal Middle Fusion
+
 <div align="center">
     <img src="assets/architecture.png" width="500" height="500">
 </div>
@@ -80,7 +81,6 @@ This repo is the implementation for the paper
 
 ## Installing and running our model
 
-
 ## Paper Implementation
 
 ### Feature Extraction - MARLIN
@@ -99,7 +99,6 @@ pip install marlin-pytorch
 ```
 
 For more details, see [MARLIN_MODEL_ZOO.md](MARLIN_MODEL_ZOO.md).
-
 
 ### Installation
 
@@ -126,6 +125,7 @@ python3 preprocess/preprocess_clips.py --data_dir . --yt /path/to/yt_data
 ```
 
 Create split
+
 ```bash
 python create_split.py --data_dir /path/to/data
 ```
@@ -140,8 +140,6 @@ python preprocess/extract_features.py --data_dir /path/to/data --backbone marlin
 ex:
 python preprocess/extract_features.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf
 ```
-
-
 
 #### 4. Train and evaluate
 
@@ -170,6 +168,24 @@ python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deep
 --skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt
 
 ```
+
+#### 5. Hyperparameters Search
+
+- model
+- fusion
+- lr
+- attention heads
+- hidden dimension
+- batch size
+- epoch
+- audio positional encoding
+
+#### 6. Performing Grid Search
+
+- config/grid_search_config.py
+- --grid_search
+
+#### 7. Performing Audio Feature Extraction
 
 </details>
 
