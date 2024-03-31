@@ -115,7 +115,7 @@ class NoArgInit:
 import librosa
 from scipy.signal import resample
 
-def get_mfccs(y, sr):
+def get_mfccs(y, sr=44100):
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)
     return mfcc
 
