@@ -98,7 +98,7 @@ Install MARLIN (our feature extractor) from PyPI:
 pip install marlin-pytorch
 ```
 
-For more details, see [MARLIN_MODEL_ZOO.md](MARLIN_MODEL_ZOO.md).
+For more details, see [MODEL_ZOO.md](MODEL_ZOO.md).
 
 ### Installation
 
@@ -135,11 +135,13 @@ python create_split.py --data_dir /path/to/data
 Extract MARLIN features from the cropped video and saved to `<backbone>` directory in `CelebV-HQ` directory.
 
 ```bash
-python preprocess/extract_features.py --data_dir /path/to/data --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
 
 ex:
-python preprocess/extract_features.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir yt_av_mixed --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
 ```
+
+Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 
 #### 4. Train and evaluate
 
