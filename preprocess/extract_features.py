@@ -76,7 +76,7 @@ if __name__ == '__main__':
         pass
     elif args.audio_backbone == "resnet":
         audio_model = AudioResNet18()
-        audio_resnet_model_path = "../model/audio_resnet/RAVDESS_bs_32_lr_0.001_ep_100_03-30 21 21 49.pth"
+        audio_resnet_model_path = "../model/audio_resnet/RAVDESS_bs_32_lr_0.001_ep_250_03-30 22 28 29.pth"
         audio_model.load_state_dict(torch.load(audio_resnet_model_path))
     elif args.audio_backbone == "emotion2vec":
         # TODO: Tom
