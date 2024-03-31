@@ -10,11 +10,11 @@ from tqdm.auto import tqdm
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
-from model.audio_resnet.audio_resnet18 import AudioResNet18
+from audio_resnet.audio_resnet18 import AudioResNet18
 
 
 # Used to get speech xvector embeddings
-from speechbrain.inference.speaker import EncoderClassifier
+#from speechbrain.inference.speaker import EncoderClassifier
 
 def delete_corrupted_files(filepath, corrupted_files):
     files = ["test.txt", "train.txt", "val.txt"]
@@ -70,10 +70,11 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
+        pass
+        #audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
     elif args.audio_backbone == "resnet":
         audio_model = AudioResNet18()
-        audio_resnet_model_path = "../model/audio_resnet/RAVDESS_bs_32_lr_0.001_ep_250_03-30 22 28 29.pth"
+        audio_resnet_model_path = "pretrained/RAVDESS_bs_32_lr_0.001_ep_250_03-30-22-28-29.pth"
         audio_model.load_state_dict(torch.load(audio_resnet_model_path))
     elif args.audio_backbone == "emotion2vec":
         # TODO: Tom
@@ -95,12 +96,17 @@ if __name__ == '__main__':
         audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
         save_path = os.path.join(args.data_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
         try:
-            video_embeddings = video_model.extract_video(
-                video_path, crop_face=False,
-                sample_rate=config.tubelet_size, stride=config.n_frames,
-                keep_seq=False)
-            # save video embeddings
-            np.save(save_path, video_embeddings.cpu().numpy())
+            if os.path.exists(save_path): # simply load MARLIN embedding
+                print("Loading pre-extracted marling embeeding")
+                video_embeddings = np.load(save_path)
+                print("shape", video_embeddings.shape)
+            else: # else extract MARLIN embedding
+                video_embeddings = video_model.extract_video(
+                    video_path, crop_face=False,
+                    sample_rate=config.tubelet_size, stride=config.n_frames,
+                    keep_seq=False)
+                # save video embeddings
+                np.save(save_path, video_embeddings.cpu().numpy())
             # save audio embeddings
             audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
             assert audio_embeddings.shape[0] == video_embeddings.shape[
