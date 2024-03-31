@@ -48,7 +48,8 @@ class TD3MF(LightningModule):
         temporal_axis: int = 1,
         audio_pe: bool = True,
         fusion: str = "lf",
-        hidden_layers: int = 128
+        hidden_layers: int = 128,
+        lp_only: bool = False
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -62,11 +63,17 @@ class TD3MF(LightningModule):
             self.model = None
 
         config = resolve_config(backbone)
+
         
 
         self.temporal_axis = temporal_axis
         self.hidden_layers = hidden_layers
         # self.hidden_layers_audio = 128 #audio hidden layers= 128
+
+        self.lp_only = lp_only
+        if lp_only:
+            self.lp_only_fc = nn.Linear(self.temporal_axis * config.encoder_embed_dim, num_classes)
+
         self.out_dim = 128
 
         self.audio_model_cnn = AudioCNNPool(num_classes=128, 
@@ -158,6 +165,9 @@ Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {sel
         else:
             x_v = x_v
             #now we need to seperate it back to normal (B, E) -> (B,T,E)
+
+        if self.lp_only: # only linear probing
+            return self.lp_only_fc(x_v)
             
         #x_v = x_v.reshape((x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
         # x_v = x_v.permute(0,2,1)
