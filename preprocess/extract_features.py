@@ -12,7 +12,7 @@ from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
 
 # Used to get speech xvector embeddings
-from speechbrain.inference.speaker import EncoderClassifier
+#from speechbrain.inference.speaker import EncoderClassifier
 
 def delete_corrupted_files(filepath, corrupted_files):
     files = ["test.txt", "train.txt", "val.txt"]
@@ -65,7 +65,8 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
+        #audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
+        pass
     elif args.audio_backbone == "resnet":
         # TODO: Steve
         raise ValueError(f"Error: {args.audio_backbone} not yet implemented")
@@ -86,9 +87,7 @@ if __name__ == '__main__':
 
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
-        audio_name = video_name.split("_")[0]
-        audio_name = audio_name.split("-")[0]
-        audio_path = os.path.join(raw_audio_path, audio_name + ".mp3")
+        audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
         save_path = os.path.join(args.data_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
         try:
             video_embeddings = video_model.extract_video(
