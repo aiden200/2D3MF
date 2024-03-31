@@ -14,8 +14,7 @@ from model.audio_resnet.audio_resnet18 import AudioResNet18
 
 
 # Used to get speech xvector embeddings
-# from speechbrain.inference.speaker import EncoderClassifier
-
+from speechbrain.inference.speaker import EncoderClassifier
 
 def delete_corrupted_files(filepath, corrupted_files):
     files = ["test.txt", "train.txt", "val.txt"]
@@ -40,7 +39,6 @@ def extract_audio(audio_path, audio_model, n_feats):
     audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
     audio_features = torch.cat(audio_features, dim=0)
     return audio_features  # (n_feats, n_embedding)
-
 
 sys.path.append(".")
 
@@ -72,8 +70,7 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        # audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
-        pass
+        audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
     elif args.audio_backbone == "resnet":
         audio_model = AudioResNet18()
         audio_resnet_model_path = "../model/audio_resnet/RAVDESS_bs_32_lr_0.001_ep_250_03-30 22 28 29.pth"
@@ -109,7 +106,7 @@ if __name__ == '__main__':
             assert audio_embeddings.shape[0] == video_embeddings.shape[
                 0], "Video and audio n_feats dimension do not match"
             audio_save_path = os.path.join(args.data_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-            np.save(audio_save_path, audio_embeddings.cpu().numpy())
+            np.save(audio_save_path, audio_embeddings)
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
