@@ -12,7 +12,7 @@ from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
 
 # Used to get speech xvector embeddings
-#from speechbrain.inference.speaker import EncoderClassifier
+from speechbrain.inference.speaker import EncoderClassifier
 
 def delete_corrupted_files(filepath, corrupted_files):
     files = ["test.txt", "train.txt", "val.txt"]
@@ -32,9 +32,8 @@ def extract_audio(audio_path, audio_model, n_feats):
         start_idx = int(i * sr)
         audio_buffer = audio[start_idx:start_idx+sr] # take 1sec audio windows
         audio_feat = audio_model(audio_buffer) # compute embeddings using audio_model
-        audio_features.append(audio_feat)
-    audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
-    audio_features = torch.cat(audio_features, dim=0)
+        audio_features.append(audio_feat.squeeze())
+    audio_features = np.stack(audio_features)
     return audio_features # (n_feats, n_embedding)
 
 sys.path.append(".")
@@ -65,8 +64,7 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        #audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
-        pass
+        audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
     elif args.audio_backbone == "resnet":
         # TODO: Steve
         raise ValueError(f"Error: {args.audio_backbone} not yet implemented")
@@ -100,7 +98,7 @@ if __name__ == '__main__':
             audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
             assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
             audio_save_path = os.path.join(args.data_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-            np.save(audio_save_path, audio_embeddings.cpu().numpy())
+            np.save(audio_save_path, audio_embeddings)
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
