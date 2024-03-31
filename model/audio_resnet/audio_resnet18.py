@@ -56,6 +56,10 @@ class AudioResNet18(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        if len(x.shape) == 2:
+            x = x.unsqueeze(0).unsqueeze(0)  # (10, 87) => (1, 1, 10, 87) = (B, C, 10, 87)
+        if len(x.shape) == 3:
+            x = x.unsqueeze(1)  # (32, 10, 87) = (B, 10, 87) => (32, 1, 10, 87) = (B, C, 10, 87)
         out = self.conv1(x)
         out = self.layer1(out)
         out = self.layer2(out)
