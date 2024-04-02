@@ -107,9 +107,10 @@ def main():
                 raise ValueError("Unknown granularity: {}".format(args.granularity))
             np.save(target_file, feats)
             print("Successfully saved")
-        except:
+        except Exception as e:
             print("Error in extracting features from {}".format(source_file))
             Exception("Error in extracting features from {}".format(source_file))
+            print(e)
 
 
 if __name__ == '__main__':

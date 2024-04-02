@@ -4,6 +4,8 @@ import subprocess
 from tqdm import tqdm
 import numpy as np
 import argparse
+from pydub import AudioSegment
+
 
     
 def extract_features_from_file(source_dir, target_dir="data/eat_features", granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
@@ -16,22 +18,61 @@ def extract_features_from_file(source_dir, target_dir="data/eat_features", granu
     failed_files = 0
 
     files_to_process = []
+
     for file in os.listdir(source_dir):
         if file.endswith(".wav"):
             files_to_process.append(file)
+        elif file.endswith(".mp3"):
+            if file.replace(".mp3", ".wav") not in os.listdir(source_dir):
+                files_to_process.append(file)
+
     
     for file in tqdm(files_to_process):
-        if file.endswith(".wav"):
+        if file.endswith(".wav") or file.endswith(".mp3"):
+            if file.endswith(".mp3"):
+                audio = AudioSegment.from_mp3(os.path.join(source_dir, file))
+                file = file.replace(".mp3", ".wav")
+                audio.export(os.path.join(source_dir, file), format="wav")
+            
             source_file = os.path.join(source_dir, file)
-            parts = source_file.split(os.sep)
-            source_file = os.sep.join(parts[1:])
+            # parts = source_file.split(os.sep)
+            # source_file = os.sep.join(parts[1:])
+
+            stereo_audio = AudioSegment.from_wav(source_file)
+            if stereo_audio.channels > 1:
+                mono_audio = stereo_audio.set_channels(1)
+                mono_audio.export(source_file, format="wav")
+
+            if target_length == 1024:
+                duration = 10000 # 10 seconds
+            elif target_length == 512:
+                duration = 5000 # 5 seconds
+            else:
+                raise ValueError("Wrong target length. Has to be 1024(10seconds) or 512(5) seconds.")
+            
+            audio = AudioSegment.from_file(source_file)
+
+            if len(audio) > duration:
+                # If the audio is longer than the target, trim it
+                trimmed_audio = audio[:duration]
+                trimmed_audio.export(source_file, format="wav")
+            elif len(audio) < duration:
+                # If the audio is shorter, calculate the needed padding
+                silence_duration = duration - len(audio)
+                # Create a segment of silence
+                silence = AudioSegment.silent(duration=silence_duration)
+                # Pad the audio with silence at the end
+                padded_audio = audio + silence
+                padded_audio.export(source_file, format="wav")
+            
+            audio = None
 
             target_file = os.path.join(target_dir, file.replace(".wav", ".npy"))
 
             # Construct the command to run the feature extraction script
             cmd = f"""
             cd src && python EAT/feature_extract/feature_extract.py \
-                --source_file='{source_file}' \
+                --source_file='../{source_file}' \
                 --target_file='../{target_file}' \
                 --model_dir='EAT' \
                 --checkpoint_dir='../{checkpoint_dir}' \
@@ -40,15 +81,16 @@ def extract_features_from_file(source_dir, target_dir="data/eat_features", granu
                 --norm_mean=-4.268 \
                 --norm_std=4.569
             """
+   
 
             # Execute the command
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
-            # print(target_file)
+            print(target_file)
             # n = np.load(f"{target_file}")
             # print(n.shape)
             # Check if the command was executed successfully
-            if result.returncode != 0:
+            if result.returncode != 0 or not os.path.exists(target_file):
                 print(f"Error processing {source_file}: {result.stderr}")
                 failed_files+=1
             else:
