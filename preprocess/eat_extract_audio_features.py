@@ -155,7 +155,7 @@ def extract_features_eat(source_dir, target_dir, filename, new_filename = None, 
 
     # Execute the command
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    if result.returncode != 0 or not os.path.exists(target_file):
+    if result.returncode != 0 or not os.path.exists(target_file) or "Successfully saved" not in result.stdout:
         print(f"Error processing {source_file}: {result.stderr}")
         return -1
     return 0
