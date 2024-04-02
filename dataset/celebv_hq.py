@@ -56,18 +56,26 @@ class FTDataset(BaseDataSetLoader):
         temporal_sample_rate: int,
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
-        temporal_axis: int = 1
+        temporal_axis: int = 1,
+        audio_feature: str = "default"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.clip_frames = clip_frames
         self.temporal_sample_rate = temporal_sample_rate
         self.temporal_axis = temporal_axis
+        self.audio_feature = audio_feature
 
     def __getitem__(self, index: int):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
-        audio_path = os.path.join(self.data_root, "audio", extract_number(self.name_list[index]) + ".mp3")
+        if self.audio_feature == "default":
+            audio_feature_dir = "audio_features"
+        elif self.audio_feature == "eat":
+            audio_feature_dir = "eat_features"
+        ## TODO: implement rest of place & fix audio load
+        
+        audio_path = os.path.join(self.data_root, audio_feature_dir, self.name_list[index] + ".npy")
         probe = ffmpeg.probe(video_path)["streams"][0]
         n_frames = int(probe["nb_frames"])
         
@@ -175,33 +183,45 @@ class LPFeaturesDataset(BaseDataSetLoader):
         temporal_reduction: str,
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
-        temporal_axis: int = 14
+        temporal_axis: int = 14,
+        audio_feature: str = "default"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.temporal_axis = temporal_axis
+        self.audio_feature = audio_feature
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
-        audio_path = os.path.join(self.data_root, "audio_features", self.name_list[index] + ".npy")
+        if self.audio_feature == "default":
+            audio_feature_dir = "audio_features"
+        elif self.audio_feature == "eat":
+            audio_feature_dir = "eat_features"
+        ## TODO: implement rest of place
         
+        audio_path = os.path.join(self.data_root, audio_feature_dir, self.name_list[index] + ".npy")
+        
+
         x_v = torch.from_numpy(np.load(feat_path)).float()
         x_a = torch.from_numpy(np.load(audio_path))
         # trim or add padding to add up to self.temporal_axis embeddings (~average video duration)
 
-        if x_a.dim() == 3:
+        if x_v.dim() == 3:
             if x_v.shape[0] > self.temporal_axis:
                 x_v = x_v[:self.temporal_axis]
-                x_a = x_a[:self.temporal_axis]
+                if self.audio_feature == "default":
+                    x_a = x_a[:self.temporal_axis]
             else:
                 n_pad = self.temporal_axis - x_v.shape[0]
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-                x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1], x_a.shape[2])), dim=0)
-        elif x_a.dim() == 2:
+                if self.audio_feature == "default":
+                    x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1], x_a.shape[2])), dim=0)
+        elif x_v.dim() == 2:
             n_pad = self.temporal_axis
             x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-            x_a = torch.cat((x_a.unsqueeze(0), torch.zeros(n_pad, x_a.shape[0], x_a.shape[1])), dim=0)
+            if self.audio_feature == "default":
+                x_a = torch.cat((x_a.unsqueeze(0), torch.zeros(n_pad, x_a.shape[0], x_a.shape[1])), dim=0)
         else:
             print("Error: audio features are ill shaped")
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
@@ -224,7 +244,8 @@ class DataModule(LightningDataModule):
         take_train: Optional[int] = None,
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
-        temporal_axis: float = 1.0
+        temporal_axis: float = 1.0,
+        audio_feature: str = "default"
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -241,6 +262,7 @@ class DataModule(LightningDataModule):
         self.take_val = take_val
         self.take_test = take_test
         self.temporal_axis = temporal_axis
+        self.audio_feature = audio_feature
 
         if load_raw:
             assert clip_frames is not None
@@ -256,18 +278,18 @@ class DataModule(LightningDataModule):
     def setup(self, stage=None):
         if self.load_raw:
             self.train_dataset = FTDataset(self.root_dir, "train", self.task, self.clip_frames,
-                self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis)
+                self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
             self.val_dataset = FTDataset(self.root_dir, "val", self.task, self.clip_frames,
-                self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis)
+                self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
             self.test_dataset = FTDataset(self.root_dir, "test", self.task, self.clip_frames,
-                self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis)
+                self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
             self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "train", self.task,
-                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis)
+                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
             self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "val", self.task,
-                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis)
+                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
             self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "test", self.task,
-                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis)
+                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
 
     def train_dataloader(self):
         return DataLoader(

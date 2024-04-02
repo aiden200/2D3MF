@@ -141,6 +141,12 @@ ex:
 python preprocess/extract_features.py --data_dir data/yt_av_mixed --backbone marlin_vit_small_ytf --real_only
 ```
 
+### 3.5 extract audio features (Optional)
+For EAT features
+
+```bash
+python3 preprocess/eat_extract_audio_features.py --source_file data/yt_av_mixed/audio
+```
 #### 4. Train and evaluate
 
 Train and evaluate the 2D3MF model..
@@ -162,7 +168,8 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml     --data_path yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt --epochs 500
+python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --data_path data/yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500
+
 
 
 --skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt

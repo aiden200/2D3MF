@@ -86,7 +86,7 @@ def extract_features_from_file(source_dir, target_dir="data/eat_features", granu
             # Execute the command
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
-            print(target_file)
+            # print(target_file)
             # n = np.load(f"{target_file}")
             # print(n.shape)
             # Check if the command was executed successfully
@@ -122,9 +122,13 @@ def main():
     args = parser.parse_args()
     if args.source_file == "src/EAT/feature_extract":
         print("Test Extraction. Please specify directory in --target_file.")
+
+    parts = args.source_file.split(os.sep)
+    target_dir = os.sep.join(parts[:-1])
+
     extract_features_from_file(
         args.source_file, 
-        target_dir=args.target_file,
+        target_dir=f"{target_dir}/eat_features",
         checkpoint_dir=args.checkpoint_dir, 
         target_length=args.target_length,
         )
