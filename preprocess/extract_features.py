@@ -11,6 +11,7 @@ from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
 from model.audio_resnet.audio_resnet18 import AudioResNet18
+from model.emotion2vec import Emotion2vec
 
 
 # Used to get speech xvector embeddings
@@ -61,7 +62,8 @@ if __name__ == '__main__':
     config = resolve_config(args.video_backbone)
     feat_dir_video = args.video_backbone
 
-    video_model.cuda()
+    if torch.cuda.is_available():
+        video_model.cuda()
     video_model.eval()
 
     # AudioResNet18
@@ -76,8 +78,7 @@ if __name__ == '__main__':
         audio_resnet_model_path = "../model/audio_resnet/RAVDESS_bs_32_lr_0.001_ep_250_03-30 22 28 29.pth"
         audio_model.load_state_dict(torch.load(audio_resnet_model_path))
     elif args.audio_backbone == "emotion2vec":
-        # TODO: Tom
-        raise ValueError(f"Error: {args.audio_backbone} not yet implemented")
+        audio_model = Emotion2vec()
     else:
         raise ValueError(f"Incorrect audio_backbone {args.audio_backbone}")
     feat_dir_audio = args.audio_backbone
@@ -94,6 +95,7 @@ if __name__ == '__main__':
         video_path = os.path.join(raw_video_path, video_name)
         audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
         save_path = os.path.join(args.data_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
+
         try:
             video_embeddings = video_model.extract_video(
                 video_path, crop_face=False,
@@ -115,5 +117,5 @@ if __name__ == '__main__':
             # audio_feat = torch.zeros(10, 87, dtype=torch.float32)
             continue
 
-    delete_corrupted_files(args.data_dir, corrupted_files)
+    #　delete_corrupted_files(args.data_dir, corrupted_files)
     print(f"Files Corrupted and ignored: {len(corrupted_files)}")
