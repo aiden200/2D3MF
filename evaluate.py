@@ -51,7 +51,7 @@ def train(args, config):
 
         model = TD3MF(
             num_classes, config["backbone"], True, args.marlin_ckpt,
-            task, learning_rate,
+            "binary", learning_rate,
             args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone
@@ -69,7 +69,7 @@ def train(args, config):
     else:
         model = TD3MF(
             num_classes, config["backbone"], False,
-            None, task, learning_rate, args.n_gpus > 1,
+            None, "binary", learning_rate, args.n_gpus > 1,
             ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone
@@ -114,7 +114,7 @@ def train(args, config):
 
     trainer.fit(model, dm)
 
-    print(f"\n\n {ckpt_callback.best_model_path}")
+    print(f"\n\nSaving best model at: {ckpt_callback.best_model_path}")
     return ckpt_callback.best_model_path, dm
 
 

@@ -87,7 +87,7 @@ class TD3MF(LightningModule):
                 self.temporal_axis * config.encoder_embed_dim, num_classes)
 
         self.audio_model_cnn = AudioCNNPool(num_classes=128,
-                                            h_dim=self.hidden_layers,  # audio hidden layers
+                                            h_dim=self.audio_hidden_layers,  # audio hidden layers
                                             out_dim=self.out_dim)
         self.video_model_cnn = VideoCnnPool(num_classes=1,
                                             input_dim=config.encoder_embed_dim,
@@ -108,6 +108,11 @@ class TD3MF(LightningModule):
                 d_model=self.audio_hidden_layers,  # audio hidden layers
                 dropout=0.1,
                 max_len=self.temporal_axis)
+            if audio_backbone == "eat":
+                self.audio_pe = PositionalEncoding(
+                    d_model=self.audio_hidden_layers,  # audio hidden layers
+                    dropout=0.1,
+                    max_len=512)
 
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers,
@@ -128,7 +133,7 @@ class TD3MF(LightningModule):
         self.distributed = distributed
         self.task = task
 
-        if task in "binary":
+        if task == "binary":
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
@@ -174,7 +179,8 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-            x_v = self.project_down(x_v)
+        # elif self.audio_backbone == "eat":
+            
 
         if self.audio_pe:
             # (B, T, E)
@@ -186,6 +192,8 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             # x_v = self.audio_pe(x_v) # video pe
             # x_v = x_v.permute(1,0,2)
 
+        x_v = self.project_down(x_v)
+
         h_av = self.av1(x_v, x_a)
         h_va = self.va1(x_a, x_v)
 
@@ -194,6 +202,8 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         x_v = x_v.permute(0, 2, 1)
         x_a = x_a.permute(0, 2, 1)
+
+        # print(x_v.shape, x_a.shape)
 
         if not self.lf:
             x_v = self.video_model_cnn.forward_stage2(x_v)

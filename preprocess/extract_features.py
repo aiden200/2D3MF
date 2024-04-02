@@ -37,11 +37,17 @@ def delete_corrupted_files_in_folder(filepath, folder):
         with open(os.path.join(filepath, split), "w") as file:
             file.writelines(filtered_lines)
 
+def check_dimensions_eat(filepath):
+    folder = os.path.join(filepath, "eat_features")
+    for f in os.listdir(folder):
+        n = np.load(os.path.join(folder, f))
+        assert n.shape == (512, 768)
 
 sys.path.append(".")
 
 if __name__ == '__main__':
     # delete_corrupted_files_in_folder("data/yt_av_mixed", "data/yt_av_mixed/eat_features")
+    # check_dimensions_eat("data/yt_av_mixed")
     # exit(0)
     parser = argparse.ArgumentParser("CelebV-HQ Feature Extraction")
     parser.add_argument("--video_backbone", type=str)

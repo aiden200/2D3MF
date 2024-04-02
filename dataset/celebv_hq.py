@@ -205,27 +205,32 @@ class LPFeaturesDataset(BaseDataSetLoader):
 
         x_v = torch.from_numpy(np.load(feat_path)).float()
         x_a = torch.from_numpy(np.load(audio_path))
-        # trim or add padding to add up to self.temporal_axis embeddings (~average video duration)
 
-        if x_v.dim() == 3:
+        if self.audio_feature == "eat": #todod implement other ones.
+            # x_a = x_a.unsqueeze(0)
             if x_v.shape[0] > self.temporal_axis:
                 x_v = x_v[:self.temporal_axis]
-                if self.audio_feature == "default":
-                    x_a = x_a[:self.temporal_axis]
             else:
                 n_pad = self.temporal_axis - x_v.shape[0]
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-                if self.audio_feature == "default":
+        else: # default
+            if x_a.dim() == 3:
+                if x_v.shape[0] > self.temporal_axis:
+                    x_v = x_v[:self.temporal_axis]
+                    x_a = x_a[:self.temporal_axis]
+                else:
+                    n_pad = self.temporal_axis - x_v.shape[0]
+                    x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
                     x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1], x_a.shape[2])), dim=0)
-        elif x_v.dim() == 2:
-            n_pad = self.temporal_axis
-            x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-            if self.audio_feature == "default":
+            elif x_a.dim() == 2:
+                n_pad = self.temporal_axis
+                x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
                 x_a = torch.cat((x_a.unsqueeze(0), torch.zeros(n_pad, x_a.shape[0], x_a.shape[1])), dim=0)
-        else:
-            print("Error: audio features are ill shaped")
+            else:
+                print("Error: audio features are ill shaped")
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
-
+        
+        # print(x_a.shape, x_v.shape)
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
 
 
