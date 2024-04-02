@@ -194,6 +194,15 @@ python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --da
 
 #### 7. Performing Audio Feature Extraction
 
+
+#### 8. Monitoring Performance:
+Run
+```bash
+tensorboard --logdir=lightning_logs/
+```
+
+Should be hosted on http://localhost:6006/
+
 </details>
 
 ## License

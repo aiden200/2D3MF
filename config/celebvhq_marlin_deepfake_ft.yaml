@@ -13,4 +13,4 @@ fusion: "mf"
 audio_positional_encoding: True
 hidden_layers: 128
 lp_only: False
-audio_backbone: "eat" # default
+audio_backbone: "eat" # default, eat
