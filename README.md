@@ -138,16 +138,8 @@ Extract MARLIN features from the cropped video and saved to `<backbone>` directo
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
 
 ex:
-python preprocess/extract_features.py --data_dir data/yt_av_mixed --video_backbone marlin_vit_small_ytf --real_only --audio_backbone eat --dataset forensics++
+python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backbone marlin_vit_base_ytf --audio_backbone MFCC --dataset forensics++ 
 ```
-
-### 3.5 extract audio features (Optional)
-For EAT features
-
-```bash
-python3 preprocess/eat_extract_audio_features.py --source_file data/yt_av_mixed/audio
-```
-
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 

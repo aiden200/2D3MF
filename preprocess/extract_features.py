@@ -49,6 +49,7 @@ def check_dimensions_eat(filepath):
         n = np.load(os.path.join(folder, f))
         assert n.shape == (512, 768)
 
+
 def extract_audio(audio_path, audio_model, n_feats):
     audio, sr = audio_load(audio_path)
     audio_features = []
@@ -97,10 +98,10 @@ if __name__ == '__main__':
     config = resolve_config(args.video_backbone)
     feat_dir_video = args.video_backbone
 
+
     video_model.cuda()
     video_model.eval()
 
-    # AudioResNet18
 
     # Audio embedding extractors
     if args.audio_backbone == "MFCC":
@@ -189,6 +190,7 @@ if __name__ == '__main__':
                 # feat = torch.zeros(0, video_model.encoder.embed_dim, dtype=torch.float32)
                 # audio_feat = torch.zeros(10, 87, dtype=torch.float32)
                 continue
+
 
     delete_corrupted_files(args.data_dir, corrupted_files)
     print(f"Files Corrupted and ignored: {len(corrupted_files)}")
