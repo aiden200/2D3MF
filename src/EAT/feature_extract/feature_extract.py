@@ -7,7 +7,15 @@ import torch
 import torch.nn.functional as F
 from fairseq import fairseq
 import torchaudio
-
+'''
+Credit to the authors of EAT:
+@article{chen2024eat,
+  title={EAT: Self-Supervised Pre-Training with Efficient Audio Transformer},
+  author={Chen, Wenxi and Liang, Yuzhe and Ma, Ziyang and Zheng, Zhisheng and Chen, Xie},
+  journal={arXiv preprint arXiv:2401.03497},
+  year={2024}
+}
+'''
 
 
 # global normalization for AudioSet as default (norm_mean=-4.268 && norm_std=4.569)
@@ -34,7 +42,7 @@ class UserDirModule:
 def main():
     parser = get_parser()
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
 
     # source_file = args['source_file']

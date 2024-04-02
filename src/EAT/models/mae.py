@@ -6,6 +6,17 @@
 # The code in this file is adapted from the BeiT implementation which can be found here:
 # https://github.com/microsoft/unilm/tree/master/beit
 
+'''
+Credit to the authors of EAT:
+@article{chen2024eat,
+  title={EAT: Self-Supervised Pre-Training with Efficient Audio Transformer},
+  author={Chen, Wenxi and Liang, Yuzhe and Ma, Ziyang and Zheng, Zhisheng and Chen, Xie},
+  journal={arXiv preprint arXiv:2401.03497},
+  year={2024}
+}
+'''
+
+
 import logging
 import torch
 import torch.nn as nn

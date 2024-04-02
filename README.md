@@ -217,3 +217,6 @@ Please cite our work!
 
 Some code about model is based on [ControlNet/MARLIN](https://github.com/ControlNet/MARLIN). The code related to middle fusion
 is from [Self-attention fusion for audiovisual emotion recognition with incomplete data](https://arxiv.org/abs/2201.11095).
+
+Our Audio Feature Extraction Models:
+ - [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
