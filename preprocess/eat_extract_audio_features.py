@@ -101,7 +101,7 @@ def extract_features_from_file(source_dir, target_dir="data/eat_features", granu
     
     return target_dir
 
-def extract_features_eat(source_dir, target_dir, filename, granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
+def extract_features_eat(source_dir, target_dir, filename, new_filename = None, granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
 
     if filename.endswith(".mp3"):
         audio = AudioSegment.from_mp3(os.path.join(source_dir, filename))
@@ -134,7 +134,10 @@ def extract_features_eat(source_dir, target_dir, filename, granularity="frame", 
     
     audio = None
 
+
     target_file = os.path.join(target_dir, filename.replace(".wav", ".npy"))
+    if new_filename:
+        target_file = os.path.join(target_dir, new_filename)
 
     # Construct the command to run the feature extraction script
     cmd = f"""
@@ -154,6 +157,8 @@ def extract_features_eat(source_dir, target_dir, filename, granularity="frame", 
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode != 0 or not os.path.exists(target_file):
         print(f"Error processing {source_file}: {result.stderr}")
+        return -1
+    return 0
 
 
 
