@@ -10,6 +10,8 @@ from tqdm.auto import tqdm
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 
+from eat_extract_audio_features import extract_features_eat
+
 def delete_corrupted_files(filepath, corrupted_files):
     files = ["test.txt", "train.txt", "val.txt"]
     for split in files:
@@ -25,8 +27,9 @@ sys.path.append(".")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("CelebV-HQ Feature Extraction")
-    parser.add_argument("--backbone", type=str)
+    parser.add_argument("--video_backbone", type=str)
     parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--audio_backbone", type=str, default="default")
     parser.add_argument("--real_only", action='store_true')
     args = parser.parse_args()
 

@@ -101,6 +101,60 @@ def extract_features_from_file(source_dir, target_dir="data/eat_features", granu
     
     return target_dir
 
+def extract_features_eat(source_dir, target_dir, filename, granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
+
+    if filename.endswith(".mp3"):
+        audio = AudioSegment.from_mp3(os.path.join(source_dir, filename))
+        filename = filename.replace(".mp3", ".wav")
+        audio.export(os.path.join(source_dir, filename), format="wav")
+    
+    source_file = os.path.join(source_dir, filename)
+    stereo_audio = AudioSegment.from_wav(source_file)
+    if stereo_audio.channels > 1:
+        mono_audio = stereo_audio.set_channels(1)
+        mono_audio.export(source_file, format="wav")
+
+    if target_length == 1024:
+        duration = 10000 # 10 seconds
+    elif target_length == 512:
+        duration = 5000 # 5 seconds
+    else:
+        raise ValueError("Wrong target length. Has to be 1024(10seconds) or 512(5) seconds.")
+    
+    audio = AudioSegment.from_file(source_file)
+
+    if len(audio) > duration:
+        trimmed_audio = audio[:duration]
+        trimmed_audio.export(source_file, format="wav")
+    elif len(audio) < duration:
+        silence_duration = duration - len(audio)
+        silence = AudioSegment.silent(duration=silence_duration)
+        padded_audio = audio + silence
+        padded_audio.export(source_file, format="wav")
+    
+    audio = None
+
+    target_file = os.path.join(target_dir, filename.replace(".wav", ".npy"))
+
+    # Construct the command to run the feature extraction script
+    cmd = f"""
+    cd src && python EAT/feature_extract/feature_extract.py \
+        --source_file='../{source_file}' \
+        --target_file='../{target_file}' \
+        --model_dir='EAT' \
+        --checkpoint_dir='../{checkpoint_dir}' \
+        --granularity='{granularity}' \
+        --target_length={target_length} \
+        --norm_mean=-4.268 \
+        --norm_std=4.569
+    """
+
+
+    # Execute the command
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if result.returncode != 0 or not os.path.exists(target_file):
+        print(f"Error processing {source_file}: {result.stderr}")
+
 
 
 def get_parser():
