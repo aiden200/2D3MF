@@ -1,48 +1,94 @@
 
-
-from eat_model.feature_extract.feature_extract import extract_features
 import os
+import subprocess
 from tqdm import tqdm
 import numpy as np
+import argparse
 
     
-def extract_features_from_file(source_dir, target_dir, granularity="utterance", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
-    for file in tqdm(os.listdir(source_dir)):
+def extract_features_from_file(source_dir, target_dir="data/eat_features", granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
+    os.makedirs("data", exist_ok=True)
+    os.makedirs(target_dir, exist_ok=True)
+    print("Extracting audio features with eat")
+    # print(target_length)
+
+    processed_files = 0
+    failed_files = 0
+
+    files_to_process = []
+    for file in os.listdir(source_dir):
+        if file.endswith(".wav"):
+            files_to_process.append(file)
+    
+    for file in tqdm(files_to_process):
         if file.endswith(".wav"):
             source_file = os.path.join(source_dir, file)
-            target_file = os.path.join(target_dir, file.replace(".wav", ".npy"))
-            extract_features({
-                "source_file": source_file,
-                "target_file": target_file,
-                "model_dir": "EAT",
-                "checkpoint_dir": checkpoint_dir,
-                "granularity": granularity,
-                "target_length": target_length,
-                "norm_mean": -4.268,
-                "norm_std": 4.569
-            })
-    
+            parts = source_file.split(os.sep)
+            source_file = os.sep.join(parts[1:])
 
+            target_file = os.path.join(target_dir, file.replace(".wav", ".npy"))
+
+            # Construct the command to run the feature extraction script
+            cmd = f"""
+            cd src && python EAT/feature_extract/feature_extract.py \
+                --source_file='{source_file}' \
+                --target_file='../{target_file}' \
+                --model_dir='EAT' \
+                --checkpoint_dir='../{checkpoint_dir}' \
+                --granularity='{granularity}' \
+                --target_length={target_length} \
+                --norm_mean=-4.268 \
+                --norm_std=4.569
+            """
+
+            # Execute the command
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            # print(target_file)
+            # n = np.load(f"{target_file}")
+            # print(n.shape)
+            # Check if the command was executed successfully
+            if result.returncode != 0:
+                print(f"Error processing {source_file}: {result.stderr}")
+                failed_files+=1
+            else:
+                processed_files +=1
+                # print(f"Processed {source_file} successfully.")
+                # print(result.stdout)
+    print(f"Processed: {processed_files} files.\nFailed to process: {failed_files} files.")
+    
     return target_dir
 
 
-def test_extracting_audio_features():
+
+def get_parser():
+    parser = argparse.ArgumentParser(
+        description="extract EAT features for downstream tasks"
+    )
+    parser.add_argument('--source_file', help='location of source wav files', default="src/EAT/feature_extract")
+    parser.add_argument('--target_file', help='location of target npy files', default="data/eat_features")
+    parser.add_argument('--checkpoint_dir', type=str, help='checkpoint for pre-trained model', default='pretrained/audio/EAT_pretrained_AS2M.pt')
+    parser.add_argument('--target_length', type=int, help='the target length of Mel spectrogram in time dimension', default=1024)
+    parser.add_argument('--norm_mean', type=float, help='mean value for normalization', default=-4.268)
+    parser.add_argument('--norm_std', type=float, help='standard deviation for normalization', default=4.569)
     
-    try:
-        extract_features({
-            "source_file": "EAT/feature_extract/test.wav",
-            "target_file": "EAT/feature_extract/test.npy",
-            "model_dir": "EAT",
-            "checkpoint_dir": "pretrained/audio/EAT_pretrained_AS2M.pt",
-            "granularity": 'frame',
-            "target_length": 512,
-            "norm_mean": -4.268,
-            "norm_std": 4.569
-        })
+    return parser
 
-        extracted = np.load("EAT/feature_extract/test.npy")
-        print(f"Success, extracted features shape: {extracted.shape}")
-    except Exception as e:
-        assert False, f"Failed to extract features: {e}"
 
-test_extracting_audio_features()
+def main():
+    parser = get_parser()
+    args = parser.parse_args()
+    if args.source_file == "src/EAT/feature_extract":
+        print("Test Extraction. Please specify directory in --target_file.")
+    extract_features_from_file(
+        args.source_file, 
+        target_dir=args.target_file,
+        checkpoint_dir=args.checkpoint_dir, 
+        target_length=args.target_length,
+        )
+
+
+if __name__ == '__main__':
+    main()
+
+

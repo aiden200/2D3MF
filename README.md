@@ -138,7 +138,7 @@ Extract MARLIN features from the cropped video and saved to `<backbone>` directo
 python preprocess/extract_features.py --data_dir /path/to/data --backbone marlin_vit_base_ytf
 
 ex:
-python preprocess/extract_features.py --data_dir yt_av_mixed --backbone marlin_vit_base_ytf
+python preprocess/extract_features.py --data_dir data/yt_av_mixed --backbone marlin_vit_small_ytf --real_only
 ```
 
 #### 4. Train and evaluate

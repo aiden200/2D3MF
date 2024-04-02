@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("CelebV-HQ Feature Extraction")
     parser.add_argument("--backbone", type=str)
     parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--real_only", action='store_true')
     args = parser.parse_args()
 
     # model = Marlin.from_online(args.backbone)
@@ -56,25 +57,30 @@ if __name__ == '__main__':
         video_path = os.path.join(raw_video_path, video_name)
         audio_name = video_name.split("_")[0]
         audio_name = audio_name.split("-")[0]
-        audio_path = os.path.join(raw_audio_path, audio_name + ".mp3")
-        save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
-        try:
-            feat, audio_feat = model.extract_video_and_audio(
-                video_path, crop_face=False,
-                sample_rate=config.tubelet_size, stride=config.n_frames,
-                keep_seq=False, audio_path=audio_path)
-            # save video features
-            np.save(save_path, feat.cpu().numpy())
-            # save audio features
-            audio_save_path = os.path.join(args.data_dir, "audio_features", video_name.replace(".mp4", ".npy"))
-            np.save(audio_save_path, audio_feat.cpu().numpy())
+        add_data_point = True
+        if args.real_only:
+            add_data_point = video_name.split("-")[-1][0] == "0"
+        
+        if add_data_point:
+            audio_path = os.path.join(raw_audio_path, audio_name + ".mp3")
+            save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
+            try:
+                feat, audio_feat = model.extract_video_and_audio(
+                    video_path, crop_face=False,
+                    sample_rate=config.tubelet_size, stride=config.n_frames,
+                    keep_seq=False, audio_path=audio_path)
+                # save video features
+                np.save(save_path, feat.cpu().numpy())
+                # save audio features
+                audio_save_path = os.path.join(args.data_dir, "audio_features_real_only", video_name.replace(".mp4", ".npy"))
+                np.save(audio_save_path, audio_feat.cpu().numpy())
 
-        except Exception as e:
-            print(f"Video {video_path} error.", e)
-            corrupted_files.append(video_name[:-4])
-            #feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
-            #audio_feat = torch.zeros(10, 87, dtype=torch.float32)
-            continue
+            except Exception as e:
+                print(f"Video {video_path} error.", e)
+                corrupted_files.append(video_name[:-4])
+                #feat = torch.zeros(0, model.encoder.embed_dim, dtype=torch.float32)
+                #audio_feat = torch.zeros(10, 87, dtype=torch.float32)
+                continue
     
     delete_corrupted_files(args.data_dir, corrupted_files)
     print(f"Files Corrupted and ignored: {len(corrupted_files)}")
