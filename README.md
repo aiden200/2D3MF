@@ -138,7 +138,7 @@ Extract MARLIN features from the cropped video and saved to `<backbone>` directo
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
 
 ex:
-python preprocess/extract_features.py --data_dir yt_av_mixed --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
+python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backbone marlin_vit_base_ytf --audio_backbone MFCC --dataset forensics++ 
 ```
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
@@ -164,7 +164,8 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml     --data_path yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt --epochs 500
+python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --data_path data/yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500
+
 
 
 --skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt
@@ -188,6 +189,15 @@ python evaluate.py     --config config/celebv_hq/appearance/celebvhq_marlin_deep
 - --grid_search
 
 #### 7. Performing Audio Feature Extraction
+
+
+#### 8. Monitoring Performance:
+Run
+```bash
+tensorboard --logdir=lightning_logs/
+```
+
+Should be hosted on http://localhost:6006/
 
 </details>
 
