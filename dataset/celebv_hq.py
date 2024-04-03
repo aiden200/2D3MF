@@ -57,7 +57,7 @@ class FTDataset(BaseDataSetLoader):
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
         temporal_axis: int = 1,
-        audio_feature: str = "default"
+        audio_feature: str = "mfcc"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.clip_frames = clip_frames
@@ -69,7 +69,7 @@ class FTDataset(BaseDataSetLoader):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
-        if self.audio_feature == "default":
+        if self.audio_feature == "mfcc":
             audio_feature_dir = "audio_features"
         elif self.audio_feature == "eat":
             audio_feature_dir = "eat_features"
@@ -184,7 +184,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
         temporal_axis: int = 14,
-        audio_feature: str = "default"
+        audio_feature: str = "mfcc"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.feature_dir = feature_dir
@@ -194,8 +194,8 @@ class LPFeaturesDataset(BaseDataSetLoader):
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
-        if self.audio_feature == "default":
-            audio_feature_dir = "audio_features"
+        if self.audio_feature == "mfcc":
+            audio_feature_dir = "mfcc"
         elif self.audio_feature == "eat":
             audio_feature_dir = "eat_features"
         ## TODO: implement rest of place
@@ -213,7 +213,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
             else:
                 n_pad = self.temporal_axis - x_v.shape[0]
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-        else: # default
+        else: # mfcc
             if x_a.dim() == 3:
                 if x_v.shape[0] > self.temporal_axis:
                     x_v = x_v[:self.temporal_axis]
@@ -250,7 +250,7 @@ class DataModule(LightningDataModule):
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
         temporal_axis: float = 1.0,
-        audio_feature: str = "default"
+        audio_feature: str = "mfcc"
     ):
         super().__init__()
         self.root_dir = root_dir
