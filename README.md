@@ -210,6 +210,7 @@ NEED A GENERAL PIPELINE
 <details>
   <summary>Forensics++</summary>
 Please make sure the forensices++ dir is set up as the following from step 1.
+
 ```bash
 -- Parent_dir
 |-- manipulated_sequences
