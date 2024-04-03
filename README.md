@@ -179,19 +179,19 @@ Crop the face region from the raw video and split the train val and test sets.
 
 <details>
   <summary>Forensics++</summary>
-  Please make sure the forensices++ dir is set up as the following from step 1.
-    ```
-    -- Parent_dir
-    |-- manipulated_sequences
-    |-- original_sequences
-    |-- downloaded_videos_info
-    |-- audio_clips  
-    ```
+Please make sure the forensices++ dir is set up as the following from step 1.
+```
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips  
+```
 
-    Run: 
-    ```bash
-    python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
-    ```
+Run: 
+```bash
+python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
+```
 </details>
 
 
@@ -206,19 +206,19 @@ NEED A GENERAL PIPELINE
 
 <details>
   <summary>Forensics++</summary>
-  Please make sure the forensices++ dir is set up as the following from step 1.
-    ```
-    -- Parent_dir
-    |-- manipulated_sequences
-    |-- original_sequences
-    |-- downloaded_videos_info
-    |-- audio_clips  
-    ```
+Please make sure the forensices++ dir is set up as the following from step 1.
+```
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips  
+```
 
-    Run: 
-    ```bash
-    python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
-    ```
+Run: 
+```bash
+python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
+```
 </details>
 
 ```bash
