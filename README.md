@@ -83,7 +83,7 @@ This repo is the implementation for the paper
 
 ## Paper Implementation
 
-### Feature Extraction - MARLIN
+## Feature Extraction - MARLIN
 
 Requirements:
 
@@ -100,7 +100,7 @@ pip install marlin-pytorch
 
 For more details, see [MODEL_ZOO.md](MODEL_ZOO.md).
 
-### Installation
+## Installation
 
 Install PyTorch from the [official website](https://pytorch.org/get-started/locally/)
 
@@ -112,15 +112,15 @@ cd 2D3MF
 pip install -r requirements.txt
 ```
 
-### Training
+## Training
 
-#### 1. Download Datasets
+### 1. Download Datasets
 
 <details>
   <summary>Forensics++</summary>
 We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
 
-## Storage
+#### Storage
 ```bash
 - FaceForensics++
     - The original downladed source videos from youtube: 38.5GB
@@ -129,13 +129,13 @@ We cannot offer the direct script in our repository due to their terms on using 
         - 23: ~10GB (Which we use)
 ```
 
-## Downloading the data
+#### Downloading the data
 Please download the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) dataset. We used the all light compressed original & altered videos of three manipulation methods. It's the script in the Forensics++ repository that ends with: `<output path> -d all -c c23 -t videos`
 
 
 The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances. 
 
-## Audio download
+#### Audio download
 
 Once the first two steps are executed, you should have a structure of 
 ```bash
@@ -168,13 +168,13 @@ After this, you should have a directory with the following structure:
 ```
 
 
-## References
+#### References
 - Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In *International Conference on Computer Vision (ICCV)*, 2019.
 
 </details>
 
 
-#### 2. Preprocess the dataset
+### 2. Preprocess the dataset
 
 Crop the face region from the raw video and split the train val and test sets.
 
@@ -198,7 +198,7 @@ python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir 
 </details>
 
 
-#### 3. Extract features from pretrained models
+### 3. Extract features from pretrained models
 
 NEED A GENERAL PIPELINE
 
@@ -233,7 +233,7 @@ python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backb
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 
-#### 4. Train and evaluate
+### 4. Train and evaluate
 
 Train and evaluate the 2D3MF model..
 
@@ -262,7 +262,7 @@ python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --da
 
 ```
 
-#### 5. Hyperparameters Search
+### 5. Hyperparameters Search
 
 - model
 - fusion
@@ -273,15 +273,15 @@ python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --da
 - epoch
 - audio positional encoding
 
-#### 6. Performing Grid Search
+### 6. Performing Grid Search
 
 - config/grid_search_config.py
 - --grid_search
 
-#### 7. Performing Audio Feature Extraction
+### 7. Performing Audio Feature Extraction
 
 
-#### 8. Monitoring Performance:
+### 8. Monitoring Performance:
 Run
 ```bash
 tensorboard --logdir=lightning_logs/
