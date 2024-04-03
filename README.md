@@ -121,7 +121,7 @@ pip install -r requirements.txt
 We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
 
 ## Storage
-```
+```bash
 - FaceForensics++
     - The original downladed source videos from youtube: 38.5GB
     - All h264 compressed videos with compression rate factor
@@ -138,7 +138,7 @@ The script offers two servers which can be selected by add `--server <EU or CA>`
 ## Audio download
 
 Once the first two steps are executed, you should have a structure of 
-```
+```bash
 -- Parent_dir
 |-- manipulated_sequences
 |-- original_sequences
@@ -147,7 +147,7 @@ Once the first two steps are executed, you should have a structure of
 Since the Forensics++ dataset doesn't provide audio data, we need to extract the data ourselves. Please run the script in the Forensics++ repository that ends with: `<Parent_dir from last step> -d original_youtube_videos_info`
 
 Now you should have a directory with the following structure:
-```
+```bash
 -- Parent_dir
 |-- manipulated_sequences
 |-- original_sequences
@@ -158,7 +158,8 @@ Please run the script from our repository:
 `python3 preprocess/faceforensics_scripts/extract_audio.py --dir [Parent_dir]`
 
 After this, you should have a directory with the following structure:
-```
+
+```bash
 -- Parent_dir
 |-- manipulated_sequences
 |-- original_sequences
@@ -179,8 +180,10 @@ Crop the face region from the raw video and split the train val and test sets.
 
 <details>
   <summary>Forensics++</summary>
+
 Please make sure the forensices++ dir is set up as the following from step 1.
-```
+
+```bash
 -- Parent_dir
 |-- manipulated_sequences
 |-- original_sequences
