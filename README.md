@@ -118,50 +118,57 @@ pip install -r requirements.txt
 
 <details>
   <summary>Forensics++</summary>
-    We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
+We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
 
-    ## Storage
-    - FaceForensics++
-        - The original downladed source videos from youtube: 38.5GB
-        - All h264 compressed videos with compression rate factor
-            - raw/0: ~500GB
-            - 23: ~10GB (Which we use)
+## Storage
+```
+- FaceForensics++
+    - The original downladed source videos from youtube: 38.5GB
+    - All h264 compressed videos with compression rate factor
+        - raw/0: ~500GB
+        - 23: ~10GB (Which we use)
+```
+
+## Downloading the data
+Please download the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) dataset. We used the all light compressed original & altered videos of three manipulation methods. It's the script in the Forensics++ repository that ends with: `<output path> -d all -c c23 -t videos`
 
 
-    ## Downloading the data
-    Please download the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) dataset. We used the all light compressed original & altered videos of three manipulation methods. It's the script in the Forensics++ repository that ends with: `<output path> -d all -c c23 -t videos`
+The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances. 
+
+## Audio download
+
+Once the first two steps are executed, you should have a structure of 
+```
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+```
+
+Since the Forensics++ dataset doesn't provide audio data, we need to extract the data ourselves. Please run the script in the Forensics++ repository that ends with: `<Parent_dir from last step> -d original_youtube_videos_info`
+
+Now you should have a directory with the following structure:
+```
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+```
+
+Please run the script from our repository:
+`python3 preprocess/faceforensics_scripts/extract_audio.py --dir [Parent_dir]`
+
+After this, you should have a directory with the following structure:
+```
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips    
+```
 
 
-    The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances. 
-
-    ## Audio download
-
-    Once the first two steps are executed, you should have a structure of 
-    -- Parent_dir
-    |-- manipulated_sequences
-    |-- original_sequences
-
-    Since the Forensics++ dataset doesn't provide audio data, we need to extract the data ourselves. Please run the script in the Forensics++ repository that ends with: `<Parent_dir from last step> -d original_youtube_videos_info`
-
-    Now you should have a directory with the following structure:
-    -- Parent_dir
-    |-- manipulated_sequences
-    |-- original_sequences
-    |-- downloaded_videos_info
-
-    Please run the script from our repository:
-    `python3 preprocess/faceforensics_scripts/extract_audio.py --dir [Parent_dir]`
-
-    After this, you should have a directory with the following structure:
-    -- Parent_dir
-    |-- manipulated_sequences
-    |-- original_sequences
-    |-- downloaded_videos_info
-    |-- audio_clips    
-
-    
-    ## References
-    - Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In *International Conference on Computer Vision (ICCV)*, 2019.
+## References
+- Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In *International Conference on Computer Vision (ICCV)*, 2019.
 
 </details>
 
@@ -173,11 +180,13 @@ Crop the face region from the raw video and split the train val and test sets.
 <details>
   <summary>Forensics++</summary>
   Please make sure the forensices++ dir is set up as the following from step 1.
+    ```
     -- Parent_dir
     |-- manipulated_sequences
     |-- original_sequences
     |-- downloaded_videos_info
     |-- audio_clips  
+    ```
 
     Run: 
     ```bash
@@ -198,11 +207,13 @@ NEED A GENERAL PIPELINE
 <details>
   <summary>Forensics++</summary>
   Please make sure the forensices++ dir is set up as the following from step 1.
+    ```
     -- Parent_dir
     |-- manipulated_sequences
     |-- original_sequences
     |-- downloaded_videos_info
     |-- audio_clips  
+    ```
 
     Run: 
     ```bash
