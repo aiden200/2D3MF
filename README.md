@@ -183,7 +183,7 @@ Crop the face region from the raw video and split the train val and test sets.
     ```bash
     python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
     ```
-<details>
+</details>
 
 
 #### 3. Extract features from pretrained models
@@ -193,7 +193,7 @@ NEED A GENERAL PIPELINE
 <details>
   <summary>General Extraction</summary>
 
-<details>
+</details>
 
 <details>
   <summary>Forensics++</summary>
@@ -208,7 +208,7 @@ NEED A GENERAL PIPELINE
     ```bash
     python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
     ```
-<details>
+</details>
 
 ```bash
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
