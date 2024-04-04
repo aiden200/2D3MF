@@ -57,7 +57,7 @@ class FTDataset(BaseDataSetLoader):
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
         temporal_axis: int = 1,
-        audio_feature: str = "default"
+        audio_feature: str = "mfcc"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.clip_frames = clip_frames
@@ -69,7 +69,7 @@ class FTDataset(BaseDataSetLoader):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
-        if self.audio_feature == "default":
+        if self.audio_feature == "mfcc":
             audio_feature_dir = "audio_features"
         elif self.audio_feature == "eat":
             audio_feature_dir = "eat_features"
@@ -184,7 +184,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
         temporal_axis: int = 14,
-        audio_feature: str = "default"
+        audio_feature: str = "MFCC"
     ):
         super().__init__(root_dir, split, task, data_ratio, take_num)
         self.feature_dir = feature_dir
@@ -194,26 +194,22 @@ class LPFeaturesDataset(BaseDataSetLoader):
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
-        if self.audio_feature == "default":
-            audio_feature_dir = "audio_features"
-        elif self.audio_feature == "eat":
-            audio_feature_dir = "eat_features"
-        ## TODO: implement rest of place
-        
+
+        audio_feature_dir = self.audio_feature
         audio_path = os.path.join(self.data_root, audio_feature_dir, self.name_list[index] + ".npy")
         
 
         x_v = torch.from_numpy(np.load(feat_path)).float()
         x_a = torch.from_numpy(np.load(audio_path))
 
-        if self.audio_feature == "eat": #todod implement other ones.
+        if self.audio_feature == "eat":
             # x_a = x_a.unsqueeze(0)
             if x_v.shape[0] > self.temporal_axis:
                 x_v = x_v[:self.temporal_axis]
             else:
                 n_pad = self.temporal_axis - x_v.shape[0]
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-        else: # default
+        elif self.audio_feature == "MFCC":
             if x_a.dim() == 3:
                 if x_v.shape[0] > self.temporal_axis:
                     x_v = x_v[:self.temporal_axis]
@@ -228,6 +224,17 @@ class LPFeaturesDataset(BaseDataSetLoader):
                 x_a = torch.cat((x_a.unsqueeze(0), torch.zeros(n_pad, x_a.shape[0], x_a.shape[1])), dim=0)
             else:
                 print("Error: audio features are ill shaped")
+        elif self.audio_feature == "xvectors":
+            #TODO: Implement feature extraction logic
+            pass
+        elif self.audio_feature == "resnet":
+            #TODO: Implement feature extraction logic
+            pass
+        elif self.audio_feature == "emotion2vec":
+            #TODO: Implement feature extraction logic
+            pass 
+        else:
+            raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
         y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
         
         # print(x_a.shape, x_v.shape)
@@ -250,7 +257,7 @@ class DataModule(LightningDataModule):
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
         temporal_axis: float = 1.0,
-        audio_feature: str = "default"
+        audio_feature: str = "mfcc"
     ):
         super().__init__()
         self.root_dir = root_dir

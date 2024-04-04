@@ -51,7 +51,8 @@ class TD3MF(LightningModule):
                  fusion: str = "lf",
                  hidden_layers: int = 128,
                  lp_only: bool = False,
-                 audio_backbone: str = "eat"
+                 audio_backbone: str = "MFCC",
+                 middle_fusion_type: str = "default"
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -69,16 +70,28 @@ class TD3MF(LightningModule):
         self.temporal_axis = temporal_axis
         self.hidden_layers = hidden_layers
         self.audio_backbone = audio_backbone
+        self.middle_fusion_type = middle_fusion_type
         self.out_dim = 128
         self.audio_pe = None
         self.lf = False
         if fusion == "lf":
             self.lf = True
 
-        if audio_backbone == "default":
+        if audio_backbone == "MFCC":
             self.audio_hidden_layers = self.hidden_layers
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
+        elif audio_backbone == "xvectors":
+            #TODO: Set self.audio_hidden_layers to the correct dimension 
+            pass
+        elif audio_backbone == "emotion2vec":
+            #TODO: Set self.audio_hidden_layers to the correct dimension
+            pass
+        elif audio_backbone == "resnet":
+            #TODO: Set self.audio_hidden_layers to the correct dimension
+            pass
+        else:
+            raise ValueError("Unsupported audio backbone: Must be one of (MFCC, eat, xvectors, emotion2vec, resnet)")
         # add resenet and stuff
 
         self.lp_only = lp_only
@@ -113,17 +126,27 @@ class TD3MF(LightningModule):
                     d_model=self.audio_hidden_layers,  # audio hidden layers
                     dropout=0.1,
                     max_len=512)
-
+        
         self.av1 = AttentionBlock(
-            in_dim_k=self.hidden_layers,
-            in_dim_q=self.audio_hidden_layers,  # audio hidden layers
-            out_dim=self.audio_hidden_layers,  # audio hidden layers
+            in_dim_k=self.hidden_layers, 
+            in_dim_q=self.audio_hidden_layers, #audio hidden layers 
+            out_dim=self.audio_hidden_layers, #audio hidden layers 
             num_heads=num_heads)
         self.va1 = AttentionBlock(
-            in_dim_k=self.audio_hidden_layers,  # audio hidden layers
+            in_dim_k=self.audio_hidden_layers, #audio hidden layers 
+            in_dim_q=self.hidden_layers, 
+            out_dim=self.hidden_layers, 
+            num_heads=num_heads)  
+        self.av2 = AttentionBlock(
+            in_dim_k=self.audio_hidden_layers, #audio hidden layers
             in_dim_q=self.hidden_layers,
-            out_dim=self.hidden_layers,
+            out_dim=self.audio_hidden_layers, #audio hidden layers
             num_heads=num_heads)
+        self.va2 = AttentionBlock(
+            in_dim_k=self.hidden_layers,
+            in_dim_q=self.audio_hidden_layers, #audio hidden layers
+            out_dim=self.hidden_layers,
+            num_heads=num_heads) 
 
         self.classifier_1 = nn.Sequential(
             nn.Linear(self.hidden_layers*2, num_classes),  # depfake so 1
@@ -173,13 +196,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         if self.lp_only:  # only linear probing
             return self.lp_only_fc(x_v)
 
-        if self.audio_backbone == "default":
+        if self.audio_backbone == "MFCC":
             x_a = x_a.view(
                 (x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-        # elif self.audio_backbone == "eat":
             
 
         if self.audio_pe:
@@ -188,15 +210,35 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_a = self.audio_pe(x_a)
             x_a = x_a.permute(1, 0, 2)
 
-            # x_v = x_v.permute(1,0,2)
-            # x_v = self.audio_pe(x_v) # video pe
-            # x_v = x_v.permute(1,0,2)
 
         x_v = self.project_down(x_v)
 
-        h_av = self.av1(x_v, x_a)
-        h_va = self.va1(x_a, x_v)
-
+        if self.middle_fusion_type == 'default':
+            # DEFAULT MIDDLE FUSION
+            h_av = self.av1(x_v, x_a)  # Audio features are queries to the video
+            h_va = self.va1(x_a, x_v)  # Video features are queries to the audio
+        elif self.middle_fusion_type == 'alternate1':
+            # MIDDLE FUSION ALTERNATE 1
+            h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
+            h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
+        elif self.middle_fusion_type == 'self-attention':
+            # MIDDLE FUSION ALTERNATE 2
+            h_av = self.av1(x_v, x_v)  # Video self-attention
+            h_va = self.va1(x_a, x_a)  # Audio self-attention
+        elif self.middle_fusion_type == 'cross-attention':
+            # MIDDLE FUSION ALTERNATE 3
+            h_av1 = self.av1(x_a, x_v)  # Audio features are queries to the video
+            h_va1 = self.va1(x_v, x_a)  # Video features are queries to the audio
+            h_av2 = self.av2(h_av1, x_v)  # Updated audio queries to the original/updated video
+            h_va2 = self.va2(h_va1, x_a)  # Updated video queries to the original/updated audio
+            
+            # Combine the second attention block outputs
+            h_av = h_av2
+            h_va = h_va2
+        else:
+            raise ValueError(f"Incorrect middle fusion type: {self.middle_fusion_type}\nMust be one of (default, alternate1, self-attention, cross-attention)")
+        
+        
         x_a = h_av * x_a
         x_v = h_va * x_v
 

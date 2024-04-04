@@ -83,7 +83,7 @@ This repo is the implementation for the paper
 
 ## Paper Implementation
 
-### Feature Extraction - MARLIN
+## Feature Extraction - MARLIN
 
 Requirements:
 
@@ -100,7 +100,7 @@ pip install marlin-pytorch
 
 For more details, see [MODEL_ZOO.md](MODEL_ZOO.md).
 
-### Installation
+## Installation
 
 Install PyTorch from the [official website](https://pytorch.org/get-started/locally/)
 
@@ -112,27 +112,118 @@ cd 2D3MF
 pip install -r requirements.txt
 ```
 
-### Training
+## Training
 
-#### 1. Download the Faceforensics ++ dataset
+### 1. Download Datasets
 
-#### 2. Preprocess the dataset
+<details>
+  <summary>Forensics++</summary>
+We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
+
+#### Storage
+```bash
+- FaceForensics++
+    - The original downladed source videos from youtube: 38.5GB
+    - All h264 compressed videos with compression rate factor
+        - raw/0: ~500GB
+        - 23: ~10GB (Which we use)
+```
+
+#### Downloading the data
+Please download the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) dataset. We used the all light compressed original & altered videos of three manipulation methods. It's the script in the Forensics++ repository that ends with: `<output path> -d all -c c23 -t videos`
+
+
+The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances. 
+
+#### Audio download
+
+Once the first two steps are executed, you should have a structure of 
+```bash
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+```
+
+Since the Forensics++ dataset doesn't provide audio data, we need to extract the data ourselves. Please run the script in the Forensics++ repository that ends with: `<Parent_dir from last step> -d original_youtube_videos_info`
+
+Now you should have a directory with the following structure:
+```bash
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+```
+
+Please run the script from our repository:
+`python3 preprocess/faceforensics_scripts/extract_audio.py --dir [Parent_dir]`
+
+After this, you should have a directory with the following structure:
+
+```bash
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips    
+```
+
+
+#### References
+- Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In *International Conference on Computer Vision (ICCV)*, 2019.
+
+</details>
+
+
+### 2. Preprocess the dataset
 
 Crop the face region from the raw video and split the train val and test sets.
 
+<details>
+  <summary>Forensics++</summary>
+
+Please make sure the forensices++ dir is set up as the following from step 1.
+
 ```bash
-python3 preprocess/preprocess_clips.py --data_dir . --yt /path/to/yt_data
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips  
 ```
 
-Create split
+Run: 
+```bash
+python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
+```
+</details>
+
+
+### 3. Extract features from pretrained models
+
+NEED A GENERAL PIPELINE
+
+<details>
+  <summary>General Extraction</summary>
+
+</details>
+
+<details>
+  <summary>Forensics++</summary>
+Please make sure the forensices++ dir is set up as the following from step 1.
 
 ```bash
-python create_split.py --data_dir /path/to/data
+-- Parent_dir
+|-- manipulated_sequences
+|-- original_sequences
+|-- downloaded_videos_info
+|-- audio_clips  
 ```
 
-#### 3. Extract MARLIN features (Optional, if linear probing)
-
-Extract MARLIN features from the cropped video and saved to `<backbone>` directory in `CelebV-HQ` directory.
+Run: 
+```bash
+python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
+```
+</details>
 
 ```bash
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
@@ -143,7 +234,7 @@ python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backb
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 
-#### 4. Train and evaluate
+### 4. Train and evaluate
 
 Train and evaluate the 2D3MF model..
 
@@ -164,7 +255,7 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --data_path data/yt_av_mixed     --num_workers 4     --batch_size 256     --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500
+python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path 2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500 --dataset Forensics++
 
 
 
@@ -172,7 +263,7 @@ python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --da
 
 ```
 
-#### 5. Hyperparameters Search
+### 5. Hyperparameters Search
 
 - model
 - fusion
@@ -183,15 +274,15 @@ python evaluate.py     --config config/celebvhq_marlin_deepfake_ft.yaml     --da
 - epoch
 - audio positional encoding
 
-#### 6. Performing Grid Search
+### 6. Performing Grid Search
 
 - config/grid_search_config.py
 - --grid_search
 
-#### 7. Performing Audio Feature Extraction
+### 7. Performing Audio Feature Extraction
 
 
-#### 8. Monitoring Performance:
+### 8. Monitoring Performance:
 Run
 ```bash
 tensorboard --logdir=lightning_logs/
