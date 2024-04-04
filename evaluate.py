@@ -1,4 +1,4 @@
-import argparse
+import argparse, os
 
 import torch
 from pytorch_lightning import Trainer
@@ -18,6 +18,7 @@ from config.grid_search_config import CONFIGURATIONS
 
 
 def train(args, config):
+    dataset = args.dataset
     data_path = args.data_path
     resume_ckpt = args.resume
     n_gpus = args.n_gpus
@@ -218,6 +219,8 @@ if __name__ == '__main__':
                         help="Path to CelebV-HQ evaluation config file.")
     parser.add_argument("--data_path", type=str,
                         help="Path to CelebV-HQ dataset.")
+    parser.add_argument("--dataset", type=str,
+                        help="type of dataset")    
     parser.add_argument("--marlin_ckpt", type=str, default=None,
                         help="Path to MARLIN checkpoint. Default: None, load from online.")
     parser.add_argument("--n_gpus", type=int, default=1)
@@ -234,7 +237,12 @@ if __name__ == '__main__':
                         help="Perform a grid search and report best parameters")
 
     args = parser.parse_args()
+
+    available_datasets = ["DeepfakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++"]
+    if args.dataset not in available_datasets:
+        raise ValueError(f"Dataset {args.dataset} not in {available_datasets}")
     if args.skip_train:
         assert args.resume is not None
 
+    args.data_path = os.path.join(args.data_path, args.dataset)
     evaluate(args)

@@ -196,13 +196,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         if self.lp_only:  # only linear probing
             return self.lp_only_fc(x_v)
 
-        if self.audio_backbone == "default":
+        if self.audio_backbone == "MFCC":
             x_a = x_a.view(
                 (x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-        # elif self.audio_backbone == "eat":
             
 
         if self.audio_pe:
