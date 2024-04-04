@@ -14,3 +14,4 @@ audio_positional_encoding: True
 hidden_layers: 128
 lp_only: False
 audio_backbone: "eat" # default, eat
+middle_fusion_type: "default" # alternate1, self-attention, cross-attention
