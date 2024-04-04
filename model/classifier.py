@@ -210,9 +210,6 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_a = self.audio_pe(x_a)
             x_a = x_a.permute(1, 0, 2)
 
-            # x_v = x_v.permute(1,0,2)
-            # x_v = self.audio_pe(x_v) # video pe
-            # x_v = x_v.permute(1,0,2)
 
         x_v = self.project_down(x_v)
 
