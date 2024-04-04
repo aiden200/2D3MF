@@ -60,7 +60,7 @@ This repo is the implementation for the paper
 ├── .github
 
 # below is for the PyPI package marlin-pytorch
-├── src                   # Source code for marlin-pytorch
+├── src                   # Source code for marlin-pytorch and audio feature extractors
 ├── tests                 # Unittest
 ├── requirements.lib.txt
 ├── setup.py
