@@ -14,7 +14,6 @@ def crop_face(root: str):
     target_dir = os.path.join(root, "cropped")
     process_videos(source_dir, target_dir, ext="mp4")
 
-
 def gen_split(root: str):
     videos = list(filter(lambda x: x.endswith('.mp4'), os.listdir(os.path.join(root, 'cropped'))))
     total_num = len(videos)
@@ -147,6 +146,6 @@ args = parser.parse_args()
 if __name__ == '__main__':
     data_root = args.data_dir
     yt_root = args.yt
-    if yt_root:
+    if not yt_root == None:
         data_root = process_youtube_faces(yt_root, True)
     crop_face(data_root)
