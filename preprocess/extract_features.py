@@ -146,6 +146,8 @@ if __name__ == '__main__':
         dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
     elif args.dataset == "DeepfakeTIMIT":
         dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
+    elif args.dataset == "RAVDESS":
+        dataset_dir = os.path.join(root_dir, "RAVDESS")
     else:
         raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
     
