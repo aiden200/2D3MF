@@ -215,7 +215,7 @@ NEED A GENERAL PIPELINE
 
 </details>
 
-<details>
+<!-- <details>
   <summary>Forensics++</summary>
 Please make sure the forensices++ dir is set up as the following from step 1.
 
@@ -233,7 +233,9 @@ Run:
 python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
 ```
 
-</details>
+</details> -->
+
+Run:
 
 ```bash
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
