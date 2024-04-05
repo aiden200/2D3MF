@@ -188,9 +188,11 @@ if __name__ == '__main__':
 
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
-        add_data_point = True
-        if args.real_only:
-            add_data_point = video_name.split("-")[-1][0] == "0"
+        
+        # TODO: not sure why this is needed
+        #add_data_point = True
+        #if args.real_only:
+        #    add_data_point = video_name.split("-")[-1][0] == "0"
 
         if add_data_point:
             audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
