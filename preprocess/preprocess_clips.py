@@ -79,11 +79,11 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
     fake_sequences_root = f"{root}/manipulated_sequences/"
     new_sequences = f"Forensics++/"
     
-    if not os.path.exists(new_sequences):
-        os.mkdir(new_sequences)
-        os.mkdir(os.path.join(new_sequences, "downloaded/"))
-    else:
-        reset_directory(f'{new_sequences}/downloaded/')
+    # if not os.path.exists(new_sequences):
+    #     os.mkdir(new_sequences)
+    #     os.mkdir(os.path.join(new_sequences, "downloaded/"))
+    # else:
+    #     reset_directory(f'{new_sequences}/downloaded/')
         
     
     filenames = []
