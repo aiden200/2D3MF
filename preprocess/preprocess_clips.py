@@ -77,7 +77,7 @@ def reset_directory(directory):
 def process_youtube_faces(root: str, mixed: bool = False)->str:
     original_sequences_root = f"{root}/original_sequences/youtube/c23/videos/"
     fake_sequences_root = f"{root}/manipulated_sequences/"
-    new_sequences = f"forensics++/"
+    new_sequences = f"Forensics++/"
     
     if not os.path.exists(new_sequences):
         os.mkdir(new_sequences)
