@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 
 def crop_face(root: str):
     from util.face_sdk.face_crop import process_videos
-    source_dir = os.path.join(root, "videos")
+    source_dir = os.path.join(root, "video")
     target_dir = os.path.join(root, "cropped")
     process_videos(source_dir, target_dir, ext="mp4")
 
@@ -95,7 +95,7 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
         for file in files:
             if file[-4:] == ".mp4":
                 filenames.append(file)
-    print(f"Processing {len(filenames)} videos")
+    print(f"Processing {len(filenames)} video")
     
     deepfake_techniques = []
     ignore_techniques = ["DeepFakeDetection"]
@@ -118,7 +118,7 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
     vid_count = 0
     for vid_name in real_videos:
         src = f"{original_sequences_root}{vid_name}"
-        dst = f"{new_sequences}videos/{vid_name[:-4]}-0.mp4"
+        dst = f"{new_sequences}video/{vid_name[:-4]}-0.mp4"
         vid_count += 1
         shutil.copyfile(src, dst)
     
@@ -132,7 +132,7 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
         vid_name = find_file_by_prefix(f"{fake_sequences_root}{technique}/c23/videos/", vid_name[:-4])
         if vid_name:
             src = f"{fake_sequences_root}{technique}/c23/videos/{vid_name}"
-            dst = f"{new_sequences}videos/{vid_name[:-4]}-1.mp4"
+            dst = f"{new_sequences}video/{vid_name[:-4]}-1.mp4"
             vid_count += 1
             shutil.copyfile(src, dst)
         else:
