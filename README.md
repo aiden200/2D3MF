@@ -121,6 +121,7 @@ pip install -r requirements.txt
 We cannot offer the direct script in our repository due to their terms on using the dataset. Please follow the instructions on the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) page to obtain the download script.
 
 #### Storage
+
 ```bash
 - FaceForensics++
     - The original downladed source videos from youtube: 38.5GB
@@ -130,14 +131,15 @@ We cannot offer the direct script in our repository due to their terms on using 
 ```
 
 #### Downloading the data
+
 Please download the [Forensics++](https://github.com/ondyari/FaceForensics?tab=readme-ov-file) dataset. We used the all light compressed original & altered videos of three manipulation methods. It's the script in the Forensics++ repository that ends with: `<output path> -d all -c c23 -t videos`
 
-
-The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances. 
+The script offers two servers which can be selected by add `--server <EU or CA>`. If the `EU` server is not working for you, you can also try `EU2` which has been reported to work in some of those instances.
 
 #### Audio download
 
-Once the first two steps are executed, you should have a structure of 
+Once the first two steps are executed, you should have a structure of
+
 ```bash
 -- Parent_dir
 |-- manipulated_sequences
@@ -147,6 +149,7 @@ Once the first two steps are executed, you should have a structure of
 Since the Forensics++ dataset doesn't provide audio data, we need to extract the data ourselves. Please run the script in the Forensics++ repository that ends with: `<Parent_dir from last step> -d original_youtube_videos_info`
 
 Now you should have a directory with the following structure:
+
 ```bash
 -- Parent_dir
 |-- manipulated_sequences
@@ -164,21 +167,27 @@ After this, you should have a directory with the following structure:
 |-- manipulated_sequences
 |-- original_sequences
 |-- downloaded_videos_info
-|-- audio_clips    
+|-- audio_clips
 ```
 
-
 #### References
-- Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In *International Conference on Computer Vision (ICCV)*, 2019.
+
+- Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Christian Riess, Justus Thies, Matthias Nießner. "FaceForensics++: Learning to Detect Manipulated Facial Images." In _International Conference on Computer Vision (ICCV)_, 2019.
 
 </details>
-
 
 ### 2. Preprocess the dataset
 
 Crop the face region from the raw video and split the train val and test sets.
+Run:
 
-<details>
+```bash
+python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
+```
+
+Optionally, if Forensics++ is the dataset being processed, add the `--Forensics` flag when running the command above.
+
+<!-- <details>
   <summary>Forensics++</summary>
 
 Please make sure the forensices++ dir is set up as the following from step 1.
@@ -188,15 +197,14 @@ Please make sure the forensices++ dir is set up as the following from step 1.
 |-- manipulated_sequences
 |-- original_sequences
 |-- downloaded_videos_info
-|-- audio_clips  
+|-- audio_clips
 ```
 
-Run: 
+Run:
 ```bash
 python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
 ```
-</details>
-
+</details> -->
 
 ### 3. Extract features from pretrained models
 
@@ -216,20 +224,22 @@ Please make sure the forensices++ dir is set up as the following from step 1.
 |-- manipulated_sequences
 |-- original_sequences
 |-- downloaded_videos_info
-|-- audio_clips  
+|-- audio_clips
 ```
 
-Run: 
+Run:
+
 ```bash
 python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
 ```
+
 </details>
 
 ```bash
 python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
 
 ex:
-python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backbone marlin_vit_base_ytf --audio_backbone MFCC --dataset forensics++ 
+python preprocess/extract_features.py --data_dir data/yt_av_mixed  --video_backbone marlin_vit_base_ytf --audio_backbone MFCC --dataset forensics++
 ```
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
@@ -281,9 +291,10 @@ python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path 
 
 ### 7. Performing Audio Feature Extraction
 
-
 ### 8. Monitoring Performance:
+
 Run
+
 ```bash
 tensorboard --logdir=lightning_logs/
 ```
@@ -310,4 +321,5 @@ Some code about model is based on [ControlNet/MARLIN](https://github.com/Control
 is from [Self-attention fusion for audiovisual emotion recognition with incomplete data](https://arxiv.org/abs/2201.11095).
 
 Our Audio Feature Extraction Models:
- - [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
+
+- [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)

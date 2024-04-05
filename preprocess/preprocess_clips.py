@@ -4,6 +4,7 @@ import os
 import sys
 import random
 import shutil
+from faceforensics_scripts.create_split import ff_split_dataset
 
 sys.path.append(os.getcwd())
 
@@ -15,20 +16,23 @@ def crop_face(root: str):
     process_videos(source_dir, target_dir, ext="mp4")
 
 
-def gen_split(root: str):
+def gen_split(root: str, test: float, val: float):
     videos = list(filter(lambda x: x.endswith('.mp4'), os.listdir(os.path.join(root, 'cropped'))))
     total_num = len(videos)
+    train_ratio = 1-test-val
+    val_ratio = train_ratio + val
+
 
     with open(os.path.join(root, "train.txt"), "w") as f:
-        for i in range(int(total_num * 0.8)):
+        for i in range(int(total_num * train_ratio)):
             f.write(videos[i][:-4] + "\n")
 
     with open(os.path.join(root, "val.txt"), "w") as f:
-        for i in range(int(total_num * 0.8), int(total_num * 0.9)):
+        for i in range(int(total_num * train_ratio), int(total_num * val_ratio)):
             f.write(videos[i][:-4] + "\n")
 
     with open(os.path.join(root, "test.txt"), "w") as f:
-        for i in range(int(total_num * 0.9), total_num):
+        for i in range(int(total_num * val_ratio), total_num):
             f.write(videos[i][:-4] + "\n")
 
 def find_file_by_prefix(directory, prefix):
@@ -140,17 +144,26 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--data_dir", help="Root directory of CelebV-HQ")
-parser.add_argument("--yt", help="Root directory of the yt videos")
+parser.add_argument("--data_dir", help="Root directory of Dataset to Process")
+parser.add_argument("--Forensics", action="store_true", help="Add flag when processing Forensics++")
+parser.add_argument("--test", type=float, default=.1)
+parser.add_argument("--val", type=float, default=.1)
 args = parser.parse_args()
+
+
+assert args.test + args.val < 1, "test and val ratio too high"
+
 
 if __name__ == '__main__':
     data_root = args.data_dir
-    yt_root = args.yt
-    data_root = process_youtube_faces(yt_root, True)
     crop_face(data_root)
 
     if not os.path.exists(os.path.join(data_root, "train.txt")) or \
         not os.path.exists(os.path.join(data_root, "val.txt")) or \
         not os.path.exists(os.path.join(data_root, "test.txt")):
-        gen_split(data_root)
+        if args.Forensics:
+            ff_split_dataset(data_root, args.test, args.val)
+        else:
+            gen_split(data_root, args.test, args.val)
+    
+    assert os.path.exists(os.path.join(data_root, "train.txt")), "Something went wrong creating split files."

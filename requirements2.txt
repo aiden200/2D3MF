@@ -42,7 +42,7 @@ llvmlite==0.42.0
 lxml==5.1.0
 Markdown==3.5.2
 MarkupSafe==2.1.5
--e git+https://github.com/aiden200/2D3MF.git@6ddb06d3b490844d3e9eeb4920a00930b80d54a2#egg=marlin_pytorch
+# -e git+https://github.com/aiden200/2D3MF.git@6ddb06d3b490844d3e9eeb4920a00930b80d54a2#egg=marlin_pytorch
 matplotlib==3.8.2
 moviepy==1.0.3
 mpmath==1.3.0

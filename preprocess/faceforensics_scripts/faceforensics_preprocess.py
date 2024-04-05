@@ -79,11 +79,11 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
     fake_sequences_root = f"{root}/manipulated_sequences/"
     new_sequences = f"{root}"
     
-    if not os.path.exists(new_sequences):
-        os.mkdir(new_sequences)
-        os.mkdir(os.path.join(new_sequences, "videos/"))
-    else:
-        reset_directory(f'{new_sequences}/videos/')
+    # if not os.path.exists(new_sequences):
+    #     os.mkdir(new_sequences)
+    #     os.mkdir(os.path.join(new_sequences, "videos/"))
+    # else:
+    #     reset_directory(f'{new_sequences}/videos/')
         
     
     filenames = []
@@ -149,7 +149,7 @@ assert args.test + args.val < 1, "test and val ratio too high"
 
 if __name__ == '__main__':
     data_root = args.data_dir
-    data_root = process_youtube_faces(data_root, True)
+    # data_root = process_youtube_faces(data_root, True)
     crop_face(data_root)
 
     if not os.path.exists(os.path.join(data_root, "train.txt")) or \
