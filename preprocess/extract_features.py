@@ -18,8 +18,10 @@ from audio_resnet.audio_resnet18 import AudioResNet18
 
 from eat_extract_audio_features import extract_features_eat
 
+
 def ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio):
-    if video_name.split("-")[-1][0] == "1":
+    real_fake_token = video_name.split("-")[-1][0]
+    if real_fake_token == "1":
         #checking for real video loaded
         prefix = video_name.split("_")[0]
         audio_save_path = os.path.join(dataset_dir, feat_dir_audio, f"{prefix}.npy")
@@ -104,19 +106,12 @@ def extract_audio(audio_path, audio_model, n_feats):
 sys.path.append(".")
 
 if __name__ == '__main__':
-# def main():
-    # delete_corrupted_files_in_folder("data/yt_av_mixed", "data/yt_av_mixed/eat_features")
-    # check_dimensions_eat("data/yt_av_mixed")
-    # exit(0)
     parser = argparse.ArgumentParser("Dataset Feature Extraction")
     parser.add_argument("--video_backbone", type=str)
     parser.add_argument("--audio_backbone", type=str, default="MFCC")
-    # parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--root_dir", default="2D3MF_Datasets")
     parser.add_argument("--dataset", default="Forensics++", type=str)
-    # parser.add_argument("--real_only", action='store_true')
     args = parser.parse_args()
-
-    
 
     # VIDEO BACKBONE
     # model = Marlin.from_online(args.backbone)
@@ -138,9 +133,8 @@ if __name__ == '__main__':
     video_model.cuda()
     video_model.eval()
 
-
     # DATASET SELECTION
-    root_dir = "2D3MF_Datasets"
+    root_dir = args.root_dir
     if not os.path.exists(root_dir):
         os.mkdir(root_dir)
 
@@ -204,7 +198,6 @@ if __name__ == '__main__':
             try:
                 # Video Feature Extraction
                 video_embeddings = marlin_video_extraction(save_path, video_model, video_path, config)
-
 
                 # Audio Feature Extraction
                 dup = False

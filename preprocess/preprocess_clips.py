@@ -10,7 +10,7 @@ sys.path.append(os.getcwd())
 
 def crop_face(root: str):
     from util.face_sdk.face_crop import process_videos
-    source_dir = os.path.join(root, "downloaded")
+    source_dir = os.path.join(root, "video")
     target_dir = os.path.join(root, "cropped")
     process_videos(source_dir, target_dir, ext="mp4")
 
@@ -141,16 +141,12 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", help="Root directory of CelebV-HQ")
-parser.add_argument("--yt", help="Root directory of the yt videos")
+parser.add_argument("--yt", default=None,help="Root directory of the yt videos")
 args = parser.parse_args()
 
 if __name__ == '__main__':
     data_root = args.data_dir
     yt_root = args.yt
-    data_root = process_youtube_faces(yt_root, True)
+    if yt_root:
+        data_root = process_youtube_faces(yt_root, True)
     crop_face(data_root)
-
-    if not os.path.exists(os.path.join(data_root, "train.txt")) or \
-        not os.path.exists(os.path.join(data_root, "val.txt")) or \
-        not os.path.exists(os.path.join(data_root, "test.txt")):
-        gen_split(data_root)
