@@ -196,6 +196,9 @@ if __name__ == '__main__':
 
         if add_data_point:
             audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
+            # Only extract video and audio if both exist
+            if not all(os.path.exists(path) for path in [video_path, audio_path]):
+                continue 
             save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
             try:
                 # Video Feature Extraction
