@@ -178,14 +178,20 @@ After this, you should have a directory with the following structure:
 
 ### 2. Preprocess the dataset
 
-Crop the face region from the raw video and split the train val and test sets.
+Crop the face region from the raw video.
 Run:
 
 ```bash
 python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 ```
 
-Optionally, if Forensics++ is the dataset being processed, add the `--Forensics` flag when running the command above.
+Split the train val and test sets.
+Run:
+```bash
+python3 preprocess/gen_split.py --data_dir [Dataset_Dir]
+```
+
+Optionally, if Forensics++ is the dataset being split, add the `--Forensics` flag when running the command above.
 
 <!-- <details>
   <summary>Forensics++</summary>
