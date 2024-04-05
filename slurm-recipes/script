@@ -1,0 +1,22 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=32g
+#SBATCH --time=48:00:00
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --account=<account_id>
+
+export OPENBLAS_NUM_THREADS=4
+
+module purge
+eval "$(conda shell.bash hook)"
+conda activate mamenv
+
+# Perform data preprocessing
+python preprocess/preprocess_clips.py --data_dir /scratch1/romanguz/DeepfakeTIMIT
+
+# Perform feature extraction
+#python preprocess/extract_features.py --root_dir /scratch1/romanguz --dataset DeepFakeTIMIT --video_backbone marlin_vit_small_ytf --audio_backbone MFCC
+

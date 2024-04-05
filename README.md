@@ -60,7 +60,7 @@ This repo is the implementation for the paper
 ├── .github
 
 # below is for the PyPI package marlin-pytorch
-├── src                   # Source code for marlin-pytorch
+├── src                   # Source code for marlin-pytorch and audio feature extractors
 ├── tests                 # Unittest
 ├── requirements.lib.txt
 ├── setup.py
@@ -323,4 +323,4 @@ is from [Self-attention fusion for audiovisual emotion recognition with incomple
 
 Our Audio Feature Extraction Models:
 
-- [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
+ - [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)

@@ -144,10 +144,12 @@ def process_youtube_faces(root: str, mixed: bool = False)->str:
 
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument("--data_dir", help="Root directory of Dataset to Process")
 parser.add_argument("--Forensics", action="store_true", help="Add flag when processing Forensics++")
 parser.add_argument("--test", type=float, default=.1)
 parser.add_argument("--val", type=float, default=.1)
+
 args = parser.parse_args()
 
 
@@ -167,3 +169,5 @@ if __name__ == '__main__':
             gen_split(data_root, args.test, args.val)
     
     assert os.path.exists(os.path.join(data_root, "train.txt")), "Something went wrong creating split files."
+
+

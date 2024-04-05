@@ -1,1 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Chang"
+  given-names: "Aiden"
+- family-names: "Roman Guzman"
+  given-names: "Adrian"
+- family-names: "Park"
+  given-names: "Hyunkeun"
+- family-names: "Hopkins"
+  given-names: "Kevin"
+- family-names: "Yang"
+  given-names: "Tom"
+- family-names: "Shrutika"
+  given-names: "Shrutika"
+title: "2D3MF"
+version: 1.0.0
+date-released: 2024-04-28
+url: "https://github.com/aiden200/2D3MF/"
+year: 2024
+
 
