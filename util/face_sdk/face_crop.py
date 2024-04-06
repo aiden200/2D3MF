@@ -94,10 +94,12 @@ def process_videos(video_path, output_path, ext="mp4", max_workers=8):
             if f_name.endswith('.' + ext):
                 source_path = os.path.join(video_path, f_name)
                 target_path = os.path.join(output_path, f_name)
-                fps = eval(ffmpeg.probe(source_path)["streams"][0]["avg_frame_rate"])
-                futures.append(executor.submit(crop_face_video, source_path, target_path, fourcc,
-                    fps))
-
+                try:
+                    fps = eval(ffmpeg.probe(source_path)["streams"][0]["avg_frame_rate"])
+                    futures.append(executor.submit(crop_face_video, source_path, target_path, fourcc,
+                        fps))
+                except:
+                    continue
         for future in tqdm(futures):
             future.result()
 

@@ -14,12 +14,14 @@ from audio_resnet.audio_resnet18 import AudioResNet18
 
 
 # Used to get speech xvector embeddings
-#from speechbrain.inference.speaker import EncoderClassifier
+# from speechbrain.inference.speaker import EncoderClassifier
 
 from eat_extract_audio_features import extract_features_eat
 
+
 def ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio):
-    if video_name.split("-")[-1][0] == "1":
+    real_fake_token = video_name.split("-")[-1][0]
+    if real_fake_token == "1":
         #checking for real video loaded
         prefix = video_name.split("_")[0]
         audio_save_path = os.path.join(dataset_dir, feat_dir_audio, f"{prefix}.npy")
@@ -104,19 +106,19 @@ def extract_audio(audio_path, audio_model, n_feats):
 sys.path.append(".")
 
 if __name__ == '__main__':
-# def main():
-    # delete_corrupted_files_in_folder("data/yt_av_mixed", "data/yt_av_mixed/eat_features")
-    # check_dimensions_eat("data/yt_av_mixed")
-    # exit(0)
     parser = argparse.ArgumentParser("Dataset Feature Extraction")
+    parser.add_argument("--data_dir", type=str)
     parser.add_argument("--video_backbone", type=str)
     parser.add_argument("--audio_backbone", type=str, default="MFCC")
-    # parser.add_argument("--data_dir", type=str)
-    parser.add_argument("--dataset", default="Forensics++", type=str)
+    parser.add_argument("--Forensics", action="store_true")
+    # parser.add_argument("--dataset", default="Forensics", type=str)
     # parser.add_argument("--real_only", action='store_true')
     args = parser.parse_args()
 
+    dataset_dir = args.data_dir
     
+    assert os.path.exists(os.path.join(dataset_dir, "cropped")) and os.path.exists(os.path.join(dataset_dir, "audio")), "Missing dir cropped or audio"
+
 
     # VIDEO BACKBONE
     # model = Marlin.from_online(args.backbone)
@@ -139,25 +141,26 @@ if __name__ == '__main__':
     video_model.eval()
 
 
-    # DATASET SELECTION
-    root_dir = "2D3MF_Datasets"
-    if not os.path.exists(root_dir):
-        os.mkdir(root_dir)
+    # # DATASET SELECTION
+    # root_dir = "2D3MF_Datasets"
+    # if not os.path.exists(root_dir):
+    #     os.mkdir(root_dir)
 
-    if args.dataset == "Forensics++":
-        dataset_dir = os.path.join(root_dir, "Forensics++")
-    elif args.dataset == "DFDC":
-        dataset_dir = os.path.join(root_dir, "DFDC")
-    elif args.dataset == "FakeAVCeleb":
-        dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
-    elif args.dataset == "DeepfakeTIMIT":
-        dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
-    else:
-        raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
+    # if args.dataset == "Forensics++":
+    #     dataset_dir = os.path.join(root_dir, "Forensics++")
+    # elif args.dataset == "DFDC":
+    #     dataset_dir = os.path.join(root_dir, "DFDC")
+    # elif args.dataset == "FakeAVCeleb":
+    #     dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
+    # elif args.dataset == "DeepfakeTIMIT":
+    #     dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
+    # else:
+    #     raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
+
     
-    if not os.path.exists(dataset_dir):
-        os.mkdir(dataset_dir)
-        print(f"Feature extraction on forensics++")
+    # if not os.path.exists(dataset_dir):
+    #     os.mkdir(dataset_dir)
+    #     print(f"Feature extraction on forensics++")
 
 
     # AUDIO BACKBONE
@@ -194,21 +197,25 @@ if __name__ == '__main__':
 
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
+        
+        # TODO: not sure why real_only is needed
         add_data_point = True
-        if args.real_only:
-            add_data_point = video_name.split("-")[-1][0] == "0"
+        #if args.real_only:
+        #    add_data_point = video_name.split("-")[-1][0] == "0"
 
         if add_data_point:
             audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
+            # Only extract video and audio if both exist
+            if not all(os.path.exists(path) for path in [video_path, audio_path]):
+                continue 
             save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
             try:
                 # Video Feature Extraction
                 video_embeddings = marlin_video_extraction(save_path, video_model, video_path, config)
 
-
                 # Audio Feature Extraction
                 dup = False
-                if args.dataset == 'Forensics++':
+                if args.Forensics:
                     # Check if the real audio is loaded
                     dup = ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio)            
                 if dup:
