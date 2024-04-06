@@ -118,11 +118,18 @@ sys.path.append(".")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Dataset Feature Extraction")
+    parser.add_argument("--data_dir", type=str)
     parser.add_argument("--video_backbone", type=str)
     parser.add_argument("--audio_backbone", type=str, default="MFCC")
-    parser.add_argument("--root_dir", default="2D3MF_Datasets")
-    parser.add_argument("--dataset", default="Forensics++", type=str)
+    parser.add_argument("--Forensics", action="store_true")
+    # parser.add_argument("--dataset", default="Forensics", type=str)
+    # parser.add_argument("--real_only", action='store_true')
     args = parser.parse_args()
+
+    dataset_dir = args.data_dir
+    
+    assert os.path.exists(os.path.join(dataset_dir, "cropped")) and os.path.exists(os.path.join(dataset_dir, "audio")), "Missing dir cropped or audio"
+
 
     # VIDEO BACKBONE
     # model = Marlin.from_online(args.backbone)
@@ -144,27 +151,27 @@ if __name__ == '__main__':
     video_model.cuda()
     video_model.eval()
 
-    # DATASET SELECTION
-    root_dir = args.root_dir
-    if not os.path.exists(root_dir):
-        os.mkdir(root_dir)
 
-    if args.dataset == "Forensics++":
-        dataset_dir = os.path.join(root_dir, "Forensics++")
-    elif args.dataset == "DFDC":
-        dataset_dir = os.path.join(root_dir, "DFDC")
-    elif args.dataset == "FakeAVCeleb":
-        dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
-    elif args.dataset == "DeepfakeTIMIT":
-        dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
-    elif args.dataset == "RAVDESS":
-        dataset_dir = os.path.join(root_dir, "RAVDESS")
-    else:
-        raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
+    # # DATASET SELECTION
+    # root_dir = "2D3MF_Datasets"
+    # if not os.path.exists(root_dir):
+    #     os.mkdir(root_dir)
+
+    # if args.dataset == "Forensics++":
+    #     dataset_dir = os.path.join(root_dir, "Forensics++")
+    # elif args.dataset == "DFDC":
+    #     dataset_dir = os.path.join(root_dir, "DFDC")
+    # elif args.dataset == "FakeAVCeleb":
+    #     dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
+    # elif args.dataset == "DeepfakeTIMIT":
+    #     dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
+    # else:
+    #     raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
+
     
-    if not os.path.exists(dataset_dir):
-        os.mkdir(dataset_dir)
-        print(f"Feature extraction on forensics++")
+    # if not os.path.exists(dataset_dir):
+    #     os.mkdir(dataset_dir)
+    #     print(f"Feature extraction on forensics++")
 
 
     # AUDIO BACKBONE
@@ -172,8 +179,6 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        # TODO: Implement
-        #pass
         audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
     elif args.audio_backbone == "resnet":
         audio_model = AudioResNet18()
