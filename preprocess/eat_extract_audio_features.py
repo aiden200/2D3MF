@@ -141,7 +141,7 @@ def extract_features_eat(source_dir, target_dir, filename, new_filename = None, 
 
     # Construct the command to run the feature extraction script
     cmd = f"""
-    cd src && python EAT/feature_extract/feature_extract.py \
+    cd model/fairseq && python EAT/feature_extract/feature_extract.py \
         --source_file='../{source_file}' \
         --target_file='../{target_file}' \
         --model_dir='EAT' \
@@ -151,6 +151,7 @@ def extract_features_eat(source_dir, target_dir, filename, new_filename = None, 
         --norm_mean=-4.268 \
         --norm_std=4.569
     """
+    print(cmd)
 
 
     # Execute the command
