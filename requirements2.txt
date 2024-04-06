@@ -16,7 +16,7 @@ cycler==0.12.1
 Cython==3.0.9
 decorator==4.4.2
 einops==0.7.0
--e git+https://github.com/facebookresearch/fairseq.git@bedb259bf34a9fc22073c13a1cee23192fa70ef3#egg=fairseq
+-e ./src/fairseq
 ffmpeg-python==0.2.0
 filelock==3.13.1
 fonttools==4.48.1
