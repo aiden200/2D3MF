@@ -54,7 +54,7 @@ def get_eat(video_name, dataset_dir, raw_audio_path, video_path):
         audio_save_path = os.path.join(dataset_dir, "eat")
         return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".mp3", new_filename=video_name.replace(".mp4", ".npy"))
         if return_code != 0:
-            print(f"Video {video_path} error.")
+            print(f"Eat feature extraction: {video_path} error.")
     
             return video_name[:-4]
     return 0
