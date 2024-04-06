@@ -2,14 +2,14 @@ import os, random, argparse
 
 def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
     """
-    Split files in the /videos directory into train, test, and validation sets.
+    Split files in the /video directory into train, test, and validation sets.
     
     Args:
-    - directory (str): Path to the directory containing the /videos subdirectory.
+    - directory (str): Path to the directory containing the /video subdirectory.
     - test_ratio (float): Proportion of the dataset to include in the test split.
     - val_ratio (float): Proportion of the dataset to include in the validation split.
     """
-    videos_dir = os.path.join(directory, 'videos')
+    videos_dir = os.path.join(directory, 'cropped')
     files = [f for f in os.listdir(videos_dir) if f.endswith('.mp4')]
     # random.shuffle(files)
     
