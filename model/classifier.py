@@ -11,7 +11,7 @@ from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from model.transformer_blocks import AttentionBlock, PositionalEncoding
-from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool
+from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
 
 import torch.nn as nn
 import time
@@ -35,6 +35,7 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
 def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding='valid'), nn.BatchNorm1d(out_channels),
                          nn.ReLU(inplace=True), nn.MaxPool1d(2, 1))
+    
 
 
 class TD3MF(LightningModule):
@@ -77,19 +78,20 @@ class TD3MF(LightningModule):
         if fusion == "lf":
             self.lf = True
 
-        if audio_backbone == "MFCC":
+        if audio_backbone == "MFCC" or audio_backbone == "resnet":
             self.audio_hidden_layers = self.hidden_layers
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
+            self.eat_conv_block = EatConvBlock(10) # the temporal dimension
         elif audio_backbone == "xvectors":
             #TODO: Set self.audio_hidden_layers to the correct dimension 
             pass
         elif audio_backbone == "emotion2vec":
             #TODO: Set self.audio_hidden_layers to the correct dimension
             pass
-        elif audio_backbone == "resnet":
-            #TODO: Set self.audio_hidden_layers to the correct dimension
-            pass
+        # elif audio_backbone == "resnet":
+        #     #TODO: Set self.audio_hidden_layers to the correct dimension
+        #     pass
         else:
             raise ValueError("Unsupported audio backbone: Must be one of (MFCC, eat, xvectors, emotion2vec, resnet)")
         # add resenet and stuff
@@ -196,13 +198,16 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         if self.lp_only:  # only linear probing
             return self.lp_only_fc(x_v)
 
-        if self.audio_backbone == "MFCC":
+        if self.audio_backbone == "MFCC" or self.audio_backbone == "resnet":
             x_a = x_a.view(
                 (x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-            
+        elif self.audio_backbone == "eat":
+            # (B, 512, 768)
+            x_a = self.eat_conv_block(x_a)
+            # (B, 10, 768)
 
         if self.audio_pe:
             # (B, T, E)

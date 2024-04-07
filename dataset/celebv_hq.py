@@ -209,7 +209,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
             else:
                 n_pad = self.temporal_axis - x_v.shape[0]
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
-        elif self.audio_feature == "MFCC":
+        elif self.audio_feature == "MFCC" or self.audio_feature == "resnet":
             if x_a.dim() == 3:
                 if x_v.shape[0] > self.temporal_axis:
                     x_v = x_v[:self.temporal_axis]
@@ -225,9 +225,6 @@ class LPFeaturesDataset(BaseDataSetLoader):
             else:
                 print("Error: audio features are ill shaped")
         elif self.audio_feature == "xvectors":
-            #TODO: Implement feature extraction logic
-            pass
-        elif self.audio_feature == "resnet":
             #TODO: Implement feature extraction logic
             pass
         elif self.audio_feature == "emotion2vec":
