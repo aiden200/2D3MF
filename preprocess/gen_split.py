@@ -1,6 +1,6 @@
 import os, random, argparse
 
-def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
+def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1, feat_type="MFCC"):
     """
     Split files in the /video directory into train, test, and validation sets.
     
@@ -29,7 +29,6 @@ def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
 
     assert(test_files[:2] != val_dp)
 
-
     # Function to write filenames to a file
     def write_filenames(filenames, file_path):
         with open(file_path, 'w') as file:
@@ -37,53 +36,137 @@ def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1):
                 file.write(f"{filename[:-4]}\n")  # Remove the '.mp4' extension
     
     # Write the splits to their respective files
-    write_filenames(train_files, os.path.join(directory, 'train.txt'))
-    write_filenames(test_files, os.path.join(directory, 'test.txt'))
-    write_filenames(val_files, os.path.join(directory, 'val.txt'))
+    write_filenames(train_files, os.path.join(directory, 'train_{feat_type}.txt'))
+    write_filenames(test_files, os.path.join(directory, 'test_{feat_type}.txt'))
+    write_filenames(val_files, os.path.join(directory, 'val_{feat_type}.txt'))
 
-def gen_split(root: str, test: float, val: float):
-    videos = list(filter(lambda x: x.endswith('.mp4'), os.listdir(os.path.join(root, 'cropped'))))
+
+#NOTE: DeepfakeTIMIT has to be split such that there is no overlap of speakers among the train/eval/test splits
+def split_DeepfakeTIMIT(root: str, test: float, val: float, feat_type:str):
+    videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
+                  os.listdir(os.path.join(root, 'cropped'))))
+    speaker_files = {}
+    # get video tracks per speaker id
+    for filename in videos:
+        speaker_id = filename.split('-')[0]
+        if speaker_id not in speaker_files:
+            speaker_files[speaker_id] = []
+        speaker_files[speaker_id].append(filename)
+    spk_id_list = list(speaker_files.keys())
+    total_num = len(spk_id_list)
+    train_ratio = 1-test-val
+    val_ratio = train_ratio + val
+    print("total num", total_num, int(total_num * train_ratio))
+    # shuffle speakers
+    random.shuffle(spk_id_list)
+    with open(os.path.join(root, f"train_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * train_ratio)):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"val_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * train_ratio), int(total_num * val_ratio)):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"test_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * val_ratio), total_num):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n") 
+
+
+import re
+
+def get_first_id_number(filename):
+    parts = filename.split("-")
+    for part in parts:
+        match = re.search(r'id(\d+)', part)
+        if match:
+            return match.group(1)
+    return None
+
+
+#NOTE: FakeAVCeleb has to be split such that there is no overlap of speakers among the train/eval/test splits
+def split_fakeAVCeleb(root: str, test: float, val: float, feat_type:str):
+    videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
+              os.listdir(os.path.join(root, 'cropped'))))
+    speaker_files = {}
+    # get video tracks per speaker id
+    for filename in videos:
+        speaker_id = "id"+get_first_id_number(filename) # retrieve speakerID from filename
+        print("speaker_id", speaker_id) 
+        if speaker_id not in speaker_files:
+            speaker_files[speaker_id] = []
+        speaker_files[speaker_id].append(filename)
+    spk_id_list = list(speaker_files.keys())
+    total_num = len(spk_id_list)
+    train_ratio = 1-test-val
+    val_ratio = train_ratio + val
+    print("Total number of speakers", total_num, int(total_num * train_ratio))
+    # shuffle speakers
+    random.shuffle(spk_id_list)
+    with open(os.path.join(root, f"train_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * train_ratio)):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"val_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * train_ratio), int(total_num * val_ratio)):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"test_{feat_type}.txt"), "w") as f:
+        for i in range(int(total_num * val_ratio), total_num):
+            for video in speaker_files[spk_id_list[i]]:
+                f.write(video[:-4] + "\n")
+                
+
+# General method to split a dataset purely on file count basis
+def split_dataset(root: str, test: float, val: float, feat_type:str):
+    videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
+                  os.listdir(os.path.join(root, 'cropped'))))
+    
     total_num = len(videos)
     train_ratio = 1-test-val
     val_ratio = train_ratio + val
 
-
-    with open(os.path.join(root, "train.txt"), "w") as f:
+    with open(os.path.join(root, f"train_{feat_type}.txt"), "w") as f:
         for i in range(int(total_num * train_ratio)):
             f.write(videos[i][:-4] + "\n")
 
-    with open(os.path.join(root, "val.txt"), "w") as f:
+    with open(os.path.join(root, f"val_{feat_type}.txt"), "w") as f:
         for i in range(int(total_num * train_ratio), int(total_num * val_ratio)):
             f.write(videos[i][:-4] + "\n")
 
-    with open(os.path.join(root, "test.txt"), "w") as f:
+    with open(os.path.join(root, f"test_{feat_type}.txt"), "w") as f:
         for i in range(int(total_num * val_ratio), total_num):
             f.write(videos[i][:-4] + "\n")
 
 
 
-
 parser = argparse.ArgumentParser()
-
 parser.add_argument("--data_dir", help="Root directory of Dataset to Process")
-parser.add_argument("--Forensics", action="store_true", help="Add flag when processing Forensics++")
 parser.add_argument("--test", type=float, default=.1)
 parser.add_argument("--val", type=float, default=.1)
-
+parser.add_argument("--feat_type", type=str, default="MFCC")
 args = parser.parse_args()
-
 
 assert args.test + args.val < 1, "test and val ratio too high"
 
 if __name__ == '__main__':
     data_root = args.data_dir
+    feat_type = args.feat_type
 
-    if not os.path.exists(os.path.join(data_root, "train.txt")) or \
-        not os.path.exists(os.path.join(data_root, "val.txt")) or \
-        not os.path.exists(os.path.join(data_root, "test.txt")):
-        if args.Forensics:
-            ff_split_dataset(data_root, args.test, args.val)
+    if not os.path.exists(os.path.join(data_root, "train_{feat_type}.txt")) or \
+        not os.path.exists(os.path.join(data_root, "val_{feat_type}.txt")) or \
+        not os.path.exists(os.path.join(data_root, "test_{feat_type}.txt")):
+        if "Forensics" in data_root:
+            ff_split_dataset(data_root, args.test, args.val, feat_type)
+        elif "DeepfakeTIMIT" in data_root:
+            split_DeepfakeTIMIT(data_root, args.test, args.val, feat_type)
+        elif "FakeAVCeleb" in data_root:
+            split_fakeAVCeleb(data_root, args.test, args.val, feat_type)
         else:
-            gen_split(data_root, args.test, args.val)
-    
-    assert os.path.exists(os.path.join(data_root, "train.txt")), "Something went wrong creating split files."
+            split_dataset(data_root, args.test, args.val, feat_type)
+         
+    assert os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")), "Something went wrong creating split files."
