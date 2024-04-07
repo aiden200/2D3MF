@@ -86,7 +86,6 @@ def get_first_id_number(filename):
     return None
 
 
-
 #NOTE: FakeAVCeleb has to be split such that there is no overlap of speakers among the train/eval/test splits
 def split_fakeAVCeleb(root: str, test: float, val: float, feat_type:str):
     videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
@@ -120,6 +119,7 @@ def split_fakeAVCeleb(root: str, test: float, val: float, feat_type:str):
         for i in range(int(total_num * val_ratio), total_num):
             for video in speaker_files[spk_id_list[i]]:
                 f.write(video[:-4] + "\n")
+                
 
 # General method to split a dataset purely on file count basis
 def split_dataset(root: str, test: float, val: float, feat_type:str):
@@ -145,13 +145,11 @@ def split_dataset(root: str, test: float, val: float, feat_type:str):
 
 
 parser = argparse.ArgumentParser()
-
 parser.add_argument("--data_dir", help="Root directory of Dataset to Process")
 parser.add_argument("--test", type=float, default=.1)
 parser.add_argument("--val", type=float, default=.1)
 parser.add_argument("--feat_type", type=str, default="MFCC")
 args = parser.parse_args()
-
 
 assert args.test + args.val < 1, "test and val ratio too high"
 
