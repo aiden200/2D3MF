@@ -14,7 +14,7 @@ from audio_resnet.audio_resnet18 import AudioResNet18
 
 
 # Used to get speech xvector embeddings
-# from speechbrain.inference.speaker import EncoderClassifier
+from speechbrain.inference.speaker import EncoderClassifier
 
 from eat_extract_audio_features import extract_features_eat
 
@@ -34,9 +34,7 @@ def ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio):
 
 def marlin_video_extraction(save_path, video_model, video_path, config):
     if os.path.exists(save_path): # simply load MARLIN embedding
-        # print("Loading pre-extracted marling embeding")
         video_embeddings = np.load(save_path)
-        # print("shape", video_embeddings.shape)
     else: # else extract MARLIN embedding
         video_embeddings = video_model.extract_video(
             video_path, crop_face=False,
@@ -89,6 +87,19 @@ def check_dimensions_eat(filepath):
     for f in os.listdir(folder):
         n = np.load(os.path.join(folder, f))
         assert n.shape == (512, 768)
+
+
+def extract_audio_xvectors(audio_path, audio_model, n_feats):
+    audio, sr = audio_load(audio_path)
+    audio_features = []
+    for i in range(n_feats):
+        start_idx = int(i * sr)
+        audio_buffer = audio[start_idx:start_idx + sr]  # take 1sec audio windows
+        audio_feat = audio_model(torch.from_numpy(audio_buffer))  # compute embeddings, torch tensor needed
+        audio_features.append(audio_feat[0]) # append xvector embeddings - shape (1, 7205)
+    audio_features = [arr.unsqueeze(0) for arr in audio_features]
+    audio_features = torch.cat(audio_features, dim=0)
+    return audio_features  # (n_feats, n_embedding)
 
 
 def extract_audio(audio_path, audio_model, n_feats):
@@ -166,9 +177,7 @@ if __name__ == '__main__':
     if args.audio_backbone == "MFCC":
         audio_model = get_mfccs
     elif args.audio_backbone == "xvectors":
-        # TODO: Implement
-        pass
-        #audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
+        audio_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="pretrained_models/spkrec-xvect-voxceleb")
     elif args.audio_backbone == "resnet":
         audio_model = AudioResNet18()
         audio_resnet_model_path = "pretrained/RAVDESS_bs_32_lr_0.001_ep_250_03-30-22-28-29.pth"
@@ -194,7 +203,6 @@ if __name__ == '__main__':
     corrupted_files = []
 
     for video_name in tqdm(all_videos):
-
         save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
         video_path = save_path
         audio_path = save_path.replace(".mp4", ".wav")
