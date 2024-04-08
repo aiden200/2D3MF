@@ -47,12 +47,13 @@ class BaseDataSetLoader(LightningDataModule, ABC):
 
         elif "val" in split: # only test datasets are included in val
             for dataset in training_datasets:
-                if dataset not in eval_datasets:
-                    dataset_path = os.path.join(data_root, dataset)
-                    path = os.path.join(dataset_path, f"{split}.txt")
-                    assert os.path.exists(path), f"Missing split {path}"
-                    files = list(filter(lambda x: x != "", read_text(path).split("\n")))
-                    self.name_list += [(dataset_path, x) for x in files]
+                
+                dataset_path = os.path.join(data_root, dataset)
+                path = os.path.join(dataset_path, f"{split}.txt")
+                assert os.path.exists(path), f"Missing split {path}"
+                files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                self.name_list += [(dataset_path, x) for x in files]
+                
         else:
             for dataset in training_datasets:
 
@@ -238,10 +239,10 @@ class LPFeaturesDataset(BaseDataSetLoader):
         self.audio_feature = audio_feature
 
     def __getitem__(self, index: int):
-        feat_path = os.path.join(self.name_list[index][1], self.feature_dir, self.name_list[index][1] + ".npy")
+        feat_path = os.path.join(self.name_list[index][0], self.feature_dir, self.name_list[index][1] + ".npy")
 
         audio_feature_dir = self.audio_feature
-        audio_path = os.path.join(self.name_list[index][1], audio_feature_dir, self.name_list[index][1] + ".npy")
+        audio_path = os.path.join(self.name_list[index][0], audio_feature_dir, self.name_list[index][1] + ".npy")
         
 
         x_v = torch.from_numpy(np.load(feat_path)).float()
@@ -280,7 +281,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
             pass 
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
-        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
+        y = int(self.name_list[index][1].split("-")[1]) # should be 0-real, 1-fake
         
         # print(x_a.shape, x_v.shape)
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
