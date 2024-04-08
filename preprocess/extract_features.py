@@ -128,7 +128,6 @@ if __name__ == '__main__':
     
     assert os.path.exists(os.path.join(dataset_dir, "cropped")) and os.path.exists(os.path.join(dataset_dir, "audio")), "Missing dir cropped or audio"
 
-
     # VIDEO BACKBONE
     # model = Marlin.from_online(args.backbone)
     if args.video_backbone == "marlin_vit_small_ytf":
@@ -148,29 +147,6 @@ if __name__ == '__main__':
 
     video_model.cuda()
     video_model.eval()
-
-
-    # # DATASET SELECTION
-    # root_dir = "2D3MF_Datasets"
-    # if not os.path.exists(root_dir):
-    #     os.mkdir(root_dir)
-
-    # if args.dataset == "Forensics++":
-    #     dataset_dir = os.path.join(root_dir, "Forensics++")
-    # elif args.dataset == "DFDC":
-    #     dataset_dir = os.path.join(root_dir, "DFDC")
-    # elif args.dataset == "FakeAVCeleb":
-    #     dataset_dir = os.path.join(root_dir, "FakeAVCeleb")
-    # elif args.dataset == "DeepfakeTIMIT":
-    #     dataset_dir = os.path.join(root_dir, "DeepfakeTIMIT")
-    # else:
-    #     raise ValueError(f"Dataset extraction not implemented please select one in (Forensics++, DFDC, FakeAVCeleb, DeepfakeTIMIT)")
-
-    
-    # if not os.path.exists(dataset_dir):
-    #     os.mkdir(dataset_dir)
-    #     print(f"Feature extraction on forensics++")
-
 
     # AUDIO BACKBONE
     # Audio embedding extractors
@@ -205,10 +181,21 @@ if __name__ == '__main__':
     for video_name in tqdm(all_videos):
         video_save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
         video_path = os.path.join(raw_video_path, video_name)
+        alt_video_path = os.path.join(raw_video_path, f"{video_name.split('-')[0]}.mp4")
         audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
         audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
+        alt_audio_path = os.path.join(raw_audio_path, f"{video_name.split('-')[0]}.wav")
+        
+        if not os.path.exists(audio_path) and os.path.exists(alt_audio_path):
+            audio_path = alt_audio_path
+        if not os.path.exists(video_path) and os.path.exists(alt_video_path):
+            video_path = alt_video_path
+
+        # Optionally, create .wav files if .mp3 files exists
+
         # Only extract video and audio if both exist
-        print(all(os.path.exists(path) for path in [video_path, audio_path]))
+        print(os.path.exists(video_path))
+        print(os.path.exists(audio_path))
         if not all(os.path.exists(path) for path in [video_path, audio_path]):
             print(f"File {video_path} or {audio_path} does not exist!")
             continue 
@@ -223,7 +210,6 @@ if __name__ == '__main__':
                     dup = ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio)            
                 if dup:
                     continue
-                
                 if args.audio_backbone == "eat":
                     corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path)
                     if corrupted != 0:
@@ -232,22 +218,24 @@ if __name__ == '__main__':
                     # save audio embeddings
                     audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
                     assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
+                    audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
                     np.save(audio_save_path, audio_embeddings)
                 elif args.audio_backbone == "xvectors":
-                    #TODO: Implement
-                    pass
+                    audio_embeddings = extract_audio_xvectors(audio_path, audio_model, video_embeddings.shape[0])
+                    assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
+                    audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
+                    np.save(audio_save_path, audio_embeddings)
                 elif args.audio_backbone == "resnet":
-                    #TODO: Implement
-                    pass
+                    audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
+                    assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
+                    audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
+                    np.save(audio_save_path, audio_embeddings)
                 elif args.audio_backbone == "emotion2vec":
                     #TODO: Implement
                     pass
+
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
             corrupted_files.append(video_name[:-4])
             continue
-
-
-    delete_corrupted_files(dataset_dir, corrupted_files)
-    print(f"Files Corrupted and ignored: {len(corrupted_files)}")
