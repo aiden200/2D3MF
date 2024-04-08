@@ -34,18 +34,18 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                 dataset_path = os.path.join(data_root, dataset)
                 if dataset not in eval_datasets:
                     for dataset_split in [split, split.replace("train", "test")]:
-                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split in {dataset}"
+                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split {os.path.join(dataset_path, f"{dataset_split}.txt")}"
                         self.name_list += list(
                             filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
                 else:
-                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f"{split}.txt")}"
                     self.name_list += list(
                         filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
         elif "val" in split: # only test datasets are included in val
             for dataset in training_datasets:
                 if dataset not in eval_datasets:
                     dataset_path = os.path.join(data_root, dataset)
-                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f"{split}.txt")}"
                     self.name_list += list(
                         filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
         else:
@@ -54,11 +54,11 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                 dataset_path = os.path.join(data_root, dataset)
                 if dataset not in training_datasets:
                     for dataset_split in [split, split.replace("test", "train"), split.replace("test", "val")]:
-                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split in {dataset}"
+                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split {os.path.join(dataset_path, f"{dataset_split}.txt")}"
                         self.name_list += list(
                             filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
                 else:
-                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f"{split}.txt")}"
                     self.name_list += list(
                         filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
 
