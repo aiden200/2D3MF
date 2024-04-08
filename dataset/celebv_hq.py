@@ -257,7 +257,8 @@ class DataModule(LightningDataModule):
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
         temporal_axis: float = 1.0,
-        audio_feature: str = "mfcc"
+        audio_feature: str = "MFCC",
+        dataset: str = "Forensics++"
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -275,6 +276,7 @@ class DataModule(LightningDataModule):
         self.take_test = take_test
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
+        self.dataset = dataset
 
         if load_raw:
             assert clip_frames is not None
@@ -289,18 +291,18 @@ class DataModule(LightningDataModule):
 
     def setup(self, stage=None):
         if self.load_raw:
-            self.train_dataset = FTDataset(self.root_dir, "train", self.task, self.clip_frames,
+            self.train_dataset = FTDataset(self.root_dir, f"train_{self.dataset}", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.val_dataset = FTDataset(self.root_dir, "val", self.task, self.clip_frames,
+            self.val_dataset = FTDataset(self.root_dir, f"val_{self.dataset}", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.test_dataset = FTDataset(self.root_dir, "test", self.task, self.clip_frames,
+            self.test_dataset = FTDataset(self.root_dir, f"test_{self.dataset}", self.task, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
-            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "train", self.task,
+            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.dataset}", self.task,
                 self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "val", self.task,
+            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.dataset}", self.task,
                 self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "test", self.task,
+            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.dataset}", self.task,
                 self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
 
     def train_dataloader(self):

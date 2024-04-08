@@ -65,7 +65,7 @@ def train(args, config):
             num_workers=args.num_workers,
             clip_frames=backbone_config.n_frames,
             temporal_sample_rate=2, temporal_axis=temporal_axis,
-            audio_feature=audio_backbone
+            audio_feature=audio_backbone, dataset=dataset
         )
 
     else:
@@ -84,7 +84,7 @@ def train(args, config):
             feature_dir=config["backbone"],
             temporal_reduction=config["temporal_reduction"],
             temporal_axis=temporal_axis,
-            audio_feature=audio_backbone
+            audio_feature=audio_backbone, dataset=dataset
         )
 
     if args.skip_train:
