@@ -188,9 +188,5 @@ if __name__ == '__main__':
             split_dataset(data_root, args.test, args.val, feat_type)
          
     assert os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")), "Something went wrong creating split files."
-    files = [
-        os.path.join(data_root, f"train_{feat_type}.txt"), 
-        os.path.join(data_root, f"val_{feat_type}.txt"), 
-        os.path.join(data_root, f"test_{feat_type}.txt")
-        ]
+    files = [f"train_{feat_type}.txt", f"val_{feat_type}.txt", f"test_{feat_type}.txt"]
     delete_corrupted_files(files, data_root, os.path.join(data_root, feat_type))
