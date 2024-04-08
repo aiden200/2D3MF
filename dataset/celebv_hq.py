@@ -36,18 +36,18 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                     for dataset_split in [split, split.replace("train", "test")]:
                         assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split {os.path.join(dataset_path, f'{dataset_split}.txt')}"
                         self.name_list += list(
-                            filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
+                            filter(lambda x: x[1] != "", (dataset_path, read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n"))))
                 else:
                     assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f'{split}.txt')}"
                     self.name_list += list(
-                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+                        filter(lambda x: x[1] != "", (dataset_path, read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n"))))
         elif "val" in split: # only test datasets are included in val
             for dataset in training_datasets:
                 if dataset not in eval_datasets:
                     dataset_path = os.path.join(data_root, dataset)
                     assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f'{split}.txt')}"
                     self.name_list += list(
-                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+                        filter(lambda x: x[1] != "", (dataset_path, read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n"))))
         else:
             for dataset in training_datasets:
 
@@ -56,11 +56,11 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                     for dataset_split in [split, split.replace("test", "train"), split.replace("test", "val")]:
                         assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split {os.path.join(dataset_path, f'{dataset_split}.txt')}"
                         self.name_list += list(
-                            filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
+                            filter(lambda x: x[1] != "", (dataset_path, read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n"))))
                 else:
                     assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split {os.path.join(dataset_path, f'{split}.txt')}"
                     self.name_list += list(
-                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+                        filter(lambda x: x[1] != "", (dataset_path, read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n"))))
 
         
 
@@ -231,10 +231,10 @@ class LPFeaturesDataset(BaseDataSetLoader):
         self.audio_feature = audio_feature
 
     def __getitem__(self, index: int):
-        feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+        feat_path = os.path.join(self.name_list[index][1], self.feature_dir, self.name_list[index][1] + ".npy")
 
         audio_feature_dir = self.audio_feature
-        audio_path = os.path.join(self.data_root, audio_feature_dir, self.name_list[index] + ".npy")
+        audio_path = os.path.join(self.name_list[index][1], audio_feature_dir, self.name_list[index][1] + ".npy")
         
 
         x_v = torch.from_numpy(np.load(feat_path)).float()
