@@ -102,6 +102,19 @@ def extract_audio_xvectors(audio_path, audio_model, n_feats):
     return audio_features  # (n_feats, n_embedding)
 
 
+def extract_audio_resnet(audio_path, audio_model, n_feats):
+    audio, sr = audio_load(audio_path)
+    audio_features = []
+    for i in range(n_feats):
+        start_idx = int(i * sr)
+        audio_buffer = audio[start_idx:start_idx + sr]  # take 1sec audio windows
+        audio_feat = audio_model(get_mfccs(audio_buffer))  # compute embeddings using audio_model
+        audio_features.append(audio_feat)
+    audio_features = [torch.from_numpy(arr).unsqueeze(0) for arr in audio_features]
+    audio_features = torch.cat(audio_features, dim=0)
+    return audio_features  # (n_feats, n_embedding)
+
+
 def extract_audio(audio_path, audio_model, n_feats):
     audio, sr = audio_load(audio_path)
     audio_features = []
@@ -213,7 +226,7 @@ if __name__ == '__main__':
                 audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
                 np.save(audio_save_path, audio_embeddings)
             elif args.audio_backbone == "resnet":
-                audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
+                audio_embeddings = extract_audio_resnet(audio_path, audio_model, video_embeddings.shape[0])
                 assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
                 audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
                 np.save(audio_save_path, audio_embeddings)
