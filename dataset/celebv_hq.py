@@ -19,16 +19,50 @@ from dataset.utils import *
 
 class BaseDataSetLoader(LightningDataModule, ABC):
 
-    def __init__(self, data_root: str, split: str, task: str, data_ratio: float = 1.0, take_num: int = None):
+    def __init__(self, data_root: str, split:str, training_datasets: list, eval_datasets: list, task: str, data_ratio: float = 1.0, take_num: int = None):
         super().__init__()
         self.data_root = data_root
         self.split = split
         assert task in ("appearance", "action", "deepfake")
         self.task = task
         self.take_num = take_num
+        self.name_list = []
 
-        self.name_list = list(
-            filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}.txt")).split("\n")))
+        if "train" in split:
+            for dataset in training_datasets:
+                # contain all splits
+                dataset_path = os.path.join(data_root, dataset)
+                if dataset not in eval_datasets:
+                    for dataset_split in [split, split.replace("train", "test")]:
+                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split in {dataset}"
+                        self.name_list += list(
+                            filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
+                else:
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    self.name_list += list(
+                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+        elif "val" in split: # only test datasets are included in val
+            for dataset in training_datasets:
+                if dataset not in eval_datasets:
+                    dataset_path = os.path.join(data_root, dataset)
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    self.name_list += list(
+                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+        else:
+            for dataset in training_datasets:
+
+                dataset_path = os.path.join(data_root, dataset)
+                if dataset not in training_datasets:
+                    for dataset_split in [split, split.replace("test", "train"), split.replace("test", "val")]:
+                        assert os.path.exists(os.path.join(dataset_path, f"{dataset_split}.txt")), f"Missing split in {dataset}"
+                        self.name_list += list(
+                            filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{dataset_split}.txt")).split("\n")))
+                else:
+                    assert os.path.exists(os.path.join(dataset_path, f"{split}.txt")), f"Missing split in {dataset}"
+                    self.name_list += list(
+                        filter(lambda x: x != "", read_text(os.path.join(dataset_path, f"{split}.txt")).split("\n")))
+
+        
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
@@ -52,6 +86,8 @@ class FTDataset(BaseDataSetLoader):
         root_dir: str,
         split: str,
         task: str,
+        training_datasets: list,
+        eval_datasets: list,
         clip_frames: int,
         temporal_sample_rate: int,
         data_ratio: float = 1.0,
@@ -179,6 +215,8 @@ class LPFeaturesDataset(BaseDataSetLoader):
     def __init__(self, root_dir: str,
         feature_dir: str,
         split: str,
+        training_datasets: list,
+        eval_datasets: list,
         task: str,
         temporal_reduction: str,
         data_ratio: float = 1.0,
@@ -186,7 +224,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
         temporal_axis: int = 14,
         audio_feature: str = "MFCC"
     ):
-        super().__init__(root_dir, split, task, data_ratio, take_num)
+        super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.temporal_axis = temporal_axis
@@ -257,7 +295,9 @@ class DataModule(LightningDataModule):
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
         temporal_axis: float = 1.0,
-        audio_feature: str = "MFCC"
+        audio_feature: str = "MFCC",
+        training_datasets: list = [],
+        eval_datasets: list = []
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -282,6 +322,9 @@ class DataModule(LightningDataModule):
         else:
             assert feature_dir is not None
             assert temporal_reduction is not None
+        
+        self.training_datasets = training_datasets
+        self.eval_datasets = eval_datasets
 
         self.train_dataset = None
         self.val_dataset = None
@@ -296,11 +339,11 @@ class DataModule(LightningDataModule):
             self.test_dataset = FTDataset(self.root_dir, f"test_{self.audio_feature}", self.task, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
-            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.audio_feature}", self.task,
+            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.audio_feature}", self.task,
+            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.audio_feature}", self.task,
+            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
 
     def train_dataloader(self):

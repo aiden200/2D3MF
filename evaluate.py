@@ -15,10 +15,13 @@ from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
 
 from config.grid_search_config import CONFIGURATIONS
+import subprocess
+import csv
+
 
 
 def train(args, config):
-    dataset = args.dataset
+    # dataset = args.dataset
     data_path = args.data_path
     resume_ckpt = args.resume
     n_gpus = args.n_gpus
@@ -36,6 +39,13 @@ def train(args, config):
     lp_only = config['lp_only']
     audio_backbone = config['audio_backbone']
     middle_fusion_type = config['middle_fusion_type']
+    training_datasets = config['training_datasets']
+    eval_datasets = config['eval_datasets']
+
+    available_datasets = ["DeepFakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++", "RAVDESS"]
+    for dataset in training_datasets + eval_datasets:
+        if dataset not in available_datasets:
+            raise ValueError(f"Dataset {dataset} not in {available_datasets}")
 
     assert task == "deepfake", "Multi class task currently not implemented."
 
@@ -65,7 +75,9 @@ def train(args, config):
             num_workers=args.num_workers,
             clip_frames=backbone_config.n_frames,
             temporal_sample_rate=2, temporal_axis=temporal_axis,
-            audio_feature=audio_backbone
+            audio_feature=audio_backbone,
+            training_datasets=training_datasets,
+            eval_datasets=eval_datasets
         )
 
     else:
@@ -84,7 +96,9 @@ def train(args, config):
             feature_dir=config["backbone"],
             temporal_reduction=config["temporal_reduction"],
             temporal_axis=temporal_axis,
-            audio_feature=audio_backbone
+            audio_feature=audio_backbone,
+            training_datasets=training_datasets,
+            eval_datasets=eval_datasets
         )
 
     if args.skip_train:
@@ -129,6 +143,8 @@ def eval_dataset(args, ckpt, dm):
     Seed.set(42)
     model.eval()
 
+    
+
     # collect predictions
     preds = trainer.predict(model, dm.test_dataloader())
     preds = torch.cat(preds)
@@ -157,11 +173,11 @@ def eval_dataset(args, ckpt, dm):
 
 def evaluate(args):
     config = read_yaml(args.config)
-    dataset_name = config["dataset"]
 
     if args.grid_search:
         results = []
         outfile = "Grid_search_results"
+        
         try:
             for search in tqdm(CONFIGURATIONS):
                 batch_size, lr, epochs, fusion, attention_heads, h_dim, pe = search
@@ -199,18 +215,23 @@ def evaluate(args):
         except Exception:
             print("Saving results to ", outfile)
         results.sort(key=lambda x: x['auc'], reverse=True)
-        with open(outfile, "w") as f:
-            f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
+        results.sort(key=lambda x: x['auc'], reverse=True)
+        with open(outfile, "w", newline='') as f:
+            fieldnames = ["batch_size", "learning_rate", "epochs", "fusion", 
+                        "attention_heads", "hidden_dimensions", "audio_positional_encoding", "auc", "acc"]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
             for result in results:
-                f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
+                writer.writerow(result)
+        # with open(outfile, "w") as f:
+        #     f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
+        #     for result in results:
+        #         f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
     else:
-        if dataset_name == "celebvhq":  # change
-            ckpt, dm = train(args, config)
-            # print(f"ckpt: {ckpt}, dm: {dm}")
-            eval_dataset(args, ckpt, dm)
-        else:
-            raise NotImplementedError(
-                f"Dataset {dataset_name} not implemented")
+        
+        ckpt, dm = train(args, config)
+        # print(f"ckpt: {ckpt}, dm: {dm}")
+        eval_dataset(args, ckpt, dm)
 
 
 if __name__ == '__main__':
@@ -219,8 +240,8 @@ if __name__ == '__main__':
                         help="Path to CelebV-HQ evaluation config file.")
     parser.add_argument("--data_path", type=str,
                         help="Path to CelebV-HQ dataset.")
-    parser.add_argument("--dataset", type=str,
-                        help="type of dataset")    
+    # parser.add_argument("--dataset", type=str,
+    #                     help="type of dataset")    
     parser.add_argument("--marlin_ckpt", type=str, default=None,
                         help="Path to MARLIN checkpoint. Default: None, load from online.")
     parser.add_argument("--n_gpus", type=int, default=1)
@@ -238,11 +259,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    available_datasets = ["DeepfakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++"]
-    if args.dataset not in available_datasets:
-        raise ValueError(f"Dataset {args.dataset} not in {available_datasets}")
+
     if args.skip_train:
         assert args.resume is not None
 
-    args.data_path = os.path.join(args.data_path, args.dataset)
     evaluate(args)
