@@ -1,5 +1,31 @@
+import librosa
+import numpy as np
 import torch.nn.functional as F
 from torch import nn
+
+from src.marlin_pytorch.util import audio_load, get_mfccs
+
+
+def get_audio_features(file_path, min_duration=3):
+    # Load the audio file
+    audio, sr = audio_load(file_path)  # 3 seconds
+
+    # Padding or Cutting by min_duration
+    audio_length = min_duration * sr
+    if audio.shape[0] < min_duration * sr:
+        # Padding
+        audio = np.pad(audio, (0, audio_length - len(audio)), 'constant')
+    elif audio.shape[0] > audio_length:
+        # Cutting
+        audio = audio[:audio_length]
+
+    audio_frames = librosa.util.frame(audio, frame_length=sr, hop_length=sr)
+    audio_frames = np.transpose(audio_frames)
+    assert audio_frames.shape[0] == min_duration, f"The audio frames should have {min_duration} seconds duration."
+
+    # Extract audio features
+    audio_features = np.array([get_mfccs(y=audio_frame, sr=sr) for audio_frame in audio_frames])  # (3, 10, 87)
+    return audio_features
 
 
 class ResidualBlock(nn.Module):
