@@ -185,9 +185,9 @@ if __name__ == '__main__':
 
         audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
         audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
-        alt_audio_path = os.path.join(raw_audio_path, f"{video_name.split('-')[0]}.wav")
+        alt_audio_path = os.path.join(raw_audio_path, f"{video_name[:-4].split('-')[0]}.wav")
         if args.Forensics:
-            audio_path = os.path.join(raw_audio_path, f"{video_name.split('_')[0]}.wav")            
+            audio_path = os.path.join(raw_audio_path, f"{video_name[:-4].split('_')[0]}.wav")            
         
         if not os.path.exists(audio_path) and os.path.exists(alt_audio_path):
             audio_path = alt_audio_path
