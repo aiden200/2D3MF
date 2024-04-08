@@ -244,7 +244,7 @@ python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir 
 Run:
 
 ```bash
-python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
+python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_small_ytf --audio_backbone eat
 ```
 
 Optionally add the `--Forensics` flag in the end if Forensics++ is the dataset being processed.

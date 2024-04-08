@@ -203,43 +203,45 @@ if __name__ == '__main__':
     corrupted_files = []
 
     for video_name in tqdm(all_videos):
-        save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
-        video_path = save_path
-        audio_path = save_path.replace(".mp4", ".wav")
+        video_save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
+        video_path = os.path.join(raw_video_path, video_name)
+        audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
+        audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
         # Only extract video and audio if both exist
+        print(all(os.path.exists(path) for path in [video_path, audio_path]))
         if not all(os.path.exists(path) for path in [video_path, audio_path]):
+            print(f"File {video_path} or {audio_path} does not exist!")
             continue 
         try:
             # Video Feature Extraction
-            video_embeddings = marlin_video_extraction(save_path, video_model, video_path, config)
-
-            # Audio Feature Extraction
-            dup = False
-            if args.Forensics:
-                # Check if the real audio is loaded
-                dup = ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio)            
-            if dup:
-                continue
-            
-            if args.audio_backbone == "eat":
-                corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path)
-                if corrupted != 0:
-                    corrupted_files.append(corrupted)
-            elif args.audio_backbone == "MFCC": # For MFCC
-                # save audio embeddings
-                audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
-                assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
-                audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-                np.save(audio_save_path, audio_embeddings)
-            elif args.audio_backbone == "xvectors":
-                #TODO: Implement
-                pass
-            elif args.audio_backbone == "resnet":
-                #TODO: Implement
-                pass
-            elif args.audio_backbone == "emotion2vec":
-                #TODO: Implement
-                pass
+            video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
+            if not os.path.exists(audio_save_path):
+                # Audio Feature Extraction
+                dup = False
+                if args.Forensics:
+                    # Check if the real audio is loaded
+                    dup = ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio)            
+                if dup:
+                    continue
+                
+                if args.audio_backbone == "eat":
+                    corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path)
+                    if corrupted != 0:
+                        corrupted_files.append(corrupted)
+                elif args.audio_backbone == "MFCC": # For MFCC
+                    # save audio embeddings
+                    audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
+                    assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
+                    np.save(audio_save_path, audio_embeddings)
+                elif args.audio_backbone == "xvectors":
+                    #TODO: Implement
+                    pass
+                elif args.audio_backbone == "resnet":
+                    #TODO: Implement
+                    pass
+                elif args.audio_backbone == "emotion2vec":
+                    #TODO: Implement
+                    pass
 
         except Exception as e:
             print(f"Video {video_path} error.", e)
