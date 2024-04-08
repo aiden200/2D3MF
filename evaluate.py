@@ -42,7 +42,7 @@ def train(args, config):
     training_datasets = config['training_datasets']
     eval_datasets = config['eval_datasets']
 
-    available_datasets = ["DeepFakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++", "RAVDESS"]
+    available_datasets = ["DeepfakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++", "RAVDESS"]
     for dataset in training_datasets + eval_datasets:
         if dataset not in available_datasets:
             raise ValueError(f"Dataset {dataset} not in {available_datasets}")

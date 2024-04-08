@@ -1,6 +1,6 @@
 model_name: "celebvhq_marlin_deepfake_ft"
 backbone: "marlin_vit_small_ytf"
-training_datasets: ["DeepFakeTIMIT", "RAVDESS", "Forensics++"] #DeepFakeTIMIT,RAVDESS, Forensics++, DFDC, FakeAVCeleb
+training_datasets: ["DeepfakeTIMIT", "RAVDESS", "Forensics++"] #DeepfakeTIMIT,RAVDESS, Forensics++, DFDC, FakeAVCeleb
 eval_datasets: ["Forensics++"]
 task: "deepfake"
 temporal_reduction: "mean"
