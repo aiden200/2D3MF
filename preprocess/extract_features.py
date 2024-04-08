@@ -182,9 +182,12 @@ if __name__ == '__main__':
         video_save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
         video_path = os.path.join(raw_video_path, video_name)
         alt_video_path = os.path.join(raw_video_path, f"{video_name.split('-')[0]}.mp4")
+
         audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
         audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
         alt_audio_path = os.path.join(raw_audio_path, f"{video_name.split('-')[0]}.wav")
+        if args.Forensics:
+            audio_path = os.path.join(raw_audio_path, f"{video_name.split('_')[0]}.wav")            
         
         if not os.path.exists(audio_path) and os.path.exists(alt_audio_path):
             audio_path = alt_audio_path
@@ -194,8 +197,6 @@ if __name__ == '__main__':
         # Optionally, create .wav files if .mp3 files exists
 
         # Only extract video and audio if both exist
-        print(os.path.exists(video_path))
-        print(os.path.exists(audio_path))
         if not all(os.path.exists(path) for path in [video_path, audio_path]):
             print(f"File {video_path} or {audio_path} does not exist!")
             continue 
