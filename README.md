@@ -188,7 +188,7 @@ python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 Split the train val and test sets.
 Run:
 ```bash
-python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [DATASET]
+python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
 ```
 
 

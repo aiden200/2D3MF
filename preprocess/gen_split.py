@@ -142,6 +142,24 @@ def split_dataset(root: str, test: float, val: float, feat_type:str):
         for i in range(int(total_num * val_ratio), total_num):
             f.write(videos[i][:-4] + "\n")
 
+def delete_corrupted_files(files, filepath, audio_filepath):
+    for split in files:
+        with open(os.path.join(filepath, split), "r") as file:
+            lines = file.readlines()
+
+        filtered_lines = []
+        for line in lines:
+            filename = line.strip()
+            audio_file = os.path.join(audio_filepath, f"{filename}.npy")
+
+            if os.path.exists(audio_file):
+                filtered_lines.append(line)
+
+        with open(os.path.join(filepath, split), "w") as file:
+            file.writelines(filtered_lines)
+    
+
+
 
 
 parser = argparse.ArgumentParser()
@@ -170,3 +188,9 @@ if __name__ == '__main__':
             split_dataset(data_root, args.test, args.val, feat_type)
          
     assert os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")), "Something went wrong creating split files."
+    files = [
+        os.path.join(data_root, f"train_{feat_type}.txt"), 
+        os.path.join(data_root, f"val_{feat_type}.txt"), 
+        os.path.join(data_root, f"test_{feat_type}.txt")
+        ]
+    delete_corrupted_files(files, data_root, os.path.join(data_root, feat_type))
