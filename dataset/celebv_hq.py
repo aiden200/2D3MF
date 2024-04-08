@@ -111,7 +111,7 @@ class FTDataset(BaseDataSetLoader):
 
     def __getitem__(self, index: int):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
-        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
+        y = int(self.name_list[index].split("-")[-1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
         if self.audio_feature == "mfcc":
             audio_feature_dir = "audio_features"
@@ -281,7 +281,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
             pass 
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
-        y = int(self.name_list[index][1].split("-")[1]) # should be 0-real, 1-fake
+        y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
         
         # print(x_a.shape, x_v.shape)
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
