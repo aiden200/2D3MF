@@ -160,7 +160,7 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(data_root, "train_{feat_type}.txt")) or \
         not os.path.exists(os.path.join(data_root, "val_{feat_type}.txt")) or \
         not os.path.exists(os.path.join(data_root, "test_{feat_type}.txt")):
-        if "Forensics" in data_root:
+        if "Forensics++" in data_root:
             ff_split_dataset(data_root, args.test, args.val, feat_type)
         elif "DeepfakeTIMIT" in data_root:
             split_DeepfakeTIMIT(data_root, args.test, args.val, feat_type)
