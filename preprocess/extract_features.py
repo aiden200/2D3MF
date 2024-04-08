@@ -45,13 +45,11 @@ def marlin_video_extraction(save_path, video_model, video_path, config):
     
     return video_embeddings
 
-def get_eat(video_name, dataset_dir, raw_audio_path, video_path):
+def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
 
-    audio_name = video_name.split("_")[0]
-    audio_name = audio_name.split("-")[0]
+
     if not os.path.exists(os.path.join(dataset_dir, "eat", audio_name + ".npy")):
         audio_save_path = os.path.join(dataset_dir, "eat")
-        print(audio_name + ".wav")
         return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".wav", new_filename=video_name.replace(".mp4", ".npy"))
         if return_code != 0:
             print(f"Eat feature extraction: {video_path} error.")
@@ -195,6 +193,9 @@ if __name__ == '__main__':
             audio_path = alt_audio_path
         if not os.path.exists(video_path) and os.path.exists(alt_video_path):
             video_path = alt_video_path
+        
+        base_name = os.path.basename(audio_path)
+        audio_name, _ = os.path.splitext(base_name)
 
         # Optionally, create .wav files if .mp3 files exists
 
@@ -214,7 +215,7 @@ if __name__ == '__main__':
                 if dup:
                     continue
                 if args.audio_backbone == "eat":
-                    corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path)
+                    corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path, audio_name)
                     if corrupted != 0:
                         corrupted_files.append(corrupted)
                 elif args.audio_backbone == "MFCC": # For MFCC
