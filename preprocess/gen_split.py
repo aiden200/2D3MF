@@ -28,7 +28,7 @@ def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1, feat_type="MFCC")
     random.shuffle(train_files)
 
     assert(test_files[:2] != val_dp)
-
+    
     # Function to write filenames to a file
     def write_filenames(filenames, file_path):
         with open(file_path, 'w') as file:
@@ -36,9 +36,9 @@ def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1, feat_type="MFCC")
                 file.write(f"{filename[:-4]}\n")  # Remove the '.mp4' extension
     
     # Write the splits to their respective files
-    write_filenames(train_files, os.path.join(directory, 'train_{feat_type}.txt'))
-    write_filenames(test_files, os.path.join(directory, 'test_{feat_type}.txt'))
-    write_filenames(val_files, os.path.join(directory, 'val_{feat_type}.txt'))
+    write_filenames(train_files, os.path.join(directory, f'train_{feat_type}.txt'))
+    write_filenames(test_files, os.path.join(directory, f'test_{feat_type}.txt'))
+    write_filenames(val_files, os.path.join(directory, f'val_{feat_type}.txt'))
 
 
 #NOTE: DeepfakeTIMIT has to be split such that there is no overlap of speakers among the train/eval/test splits
@@ -157,9 +157,9 @@ if __name__ == '__main__':
     data_root = args.data_dir
     feat_type = args.feat_type
 
-    if not os.path.exists(os.path.join(data_root, "train_{feat_type}.txt")) or \
-        not os.path.exists(os.path.join(data_root, "val_{feat_type}.txt")) or \
-        not os.path.exists(os.path.join(data_root, "test_{feat_type}.txt")):
+    if not os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")) or \
+        not os.path.exists(os.path.join(data_root, f"val_{feat_type}.txt")) or \
+        not os.path.exists(os.path.join(data_root, f"test_{feat_type}.txt")):
         if "Forensics++" in data_root:
             ff_split_dataset(data_root, args.test, args.val, feat_type)
         elif "DeepfakeTIMIT" in data_root:
