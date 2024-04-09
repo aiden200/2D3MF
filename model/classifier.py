@@ -85,8 +85,7 @@ class TD3MF(LightningModule):
             #TODO: Set self.audio_hidden_layers to the correct dimension 
             pass
         elif audio_backbone == "emotion2vec":
-            #TODO: Set self.audio_hidden_layers to the correct dimension
-            pass
+            self.audio_hidden_layers = 768
         elif audio_backbone == "resnet":
             #TODO: Set self.audio_hidden_layers to the correct dimension
             pass

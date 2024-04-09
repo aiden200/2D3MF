@@ -277,8 +277,12 @@ class LPFeaturesDataset(BaseDataSetLoader):
             #TODO: Implement feature extraction logic
             pass
         elif self.audio_feature == "emotion2vec":
-            #TODO: Implement feature extraction logic
-            pass 
+            if x_a.dim() == 2:
+                if x_a.shape[0] > self.temporal_axis:
+                    x_a = x_a[:self.temporal_axis]
+                else:
+                    n_pad = self.temporal_axis - x_a.shape[0]
+                    x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1])), dim=0)
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
         y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake

@@ -11,6 +11,7 @@ from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
 from audio_resnet.audio_resnet18 import AudioResNet18
+from src.emotion2vec.emotion2vec import Emotion2vec
 
 
 # Used to get speech xvector embeddings
@@ -146,7 +147,8 @@ if __name__ == '__main__':
     config = resolve_config(args.video_backbone)
     feat_dir_video = args.video_backbone
 
-    video_model.cuda()
+    if torch.cuda.is_available():
+        video_model.cuda()
     video_model.eval()
 
     # AUDIO BACKBONE
@@ -161,8 +163,7 @@ if __name__ == '__main__':
         audio_model.load_state_dict(torch.load(audio_resnet_model_path))
         #TODO: Make sure to integrate this logic with the below resnet todo block
     elif args.audio_backbone == "emotion2vec":
-        # TODO: Tom
-        raise ValueError(f"Error: {args.audio_backbone} not yet implemented")
+        audio_model = Emotion2vec()
     elif args.audio_backbone == "eat":
         audio_model = get_eat
     else:
@@ -236,8 +237,11 @@ if __name__ == '__main__':
                     audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
                     np.save(audio_save_path, audio_embeddings)
                 elif args.audio_backbone == "emotion2vec":
-                    #TODO: Implement
-                    pass
+                    audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
+                    assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
+                    audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
+                    np.save(audio_save_path, audio_embeddings)
+                    print(audio_embeddings.shape)
 
 
         except Exception as e:
