@@ -49,6 +49,7 @@ def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
 
 
     if not os.path.exists(os.path.join(dataset_dir, "eat", audio_name + ".npy")):
+        print(os.path.join(dataset_dir, "eat", audio_name + ".npy"))
         audio_save_path = os.path.join(dataset_dir, "eat")
         return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".wav", new_filename=video_name.replace(".mp4", ".npy"))
         if return_code != 0:
