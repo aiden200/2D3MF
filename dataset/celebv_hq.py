@@ -283,6 +283,8 @@ class LPFeaturesDataset(BaseDataSetLoader):
                 else:
                     n_pad = self.temporal_axis - x_a.shape[0]
                     x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1])), dim=0)
+            else:
+                print("Error: 'emotion2vec' audio features are ill shaped, expected a 2D array")
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
         y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
