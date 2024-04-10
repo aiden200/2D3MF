@@ -38,7 +38,6 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                         assert os.path.exists(path), f"Missing split {path}"
                         files = list(filter(lambda x: x != "", read_text(path).split("\n")))
                         self.name_list += [(dataset_path, x) for x in files]
-
                 else:
                     path = os.path.join(dataset_path, f"{split}.txt")
                     assert os.path.exists(path), f"Missing split {path}"
@@ -71,6 +70,7 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                     self.name_list += [(dataset_path, x) for x in files]
 
         
+
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
