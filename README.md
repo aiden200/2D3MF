@@ -185,11 +185,6 @@ Run:
 python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 ```
 
-Split the train val and test sets.
-Run:
-```bash
-python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
-```
 
 
 
@@ -248,6 +243,12 @@ python preprocess/extract_features.py --data_dir /path/to/data --video_backbone 
 ```
 
 Optionally add the `--Forensics` flag in the end if Forensics++ is the dataset being processed.
+
+Split the train val and test sets.
+Run:
+```bash
+python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
+```
 
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 
