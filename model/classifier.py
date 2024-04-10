@@ -217,14 +217,26 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             # DEFAULT MIDDLE FUSION
             h_av = self.av1(x_v, x_a)  # Audio features are queries to the video
             h_va = self.va1(x_a, x_v)  # Video features are queries to the audio
-        elif self.middle_fusion_type == 'alternate1':
+        elif self.middle_fusion_type == 'alternate1': # AUDIO-REFUSE
             # MIDDLE FUSION ALTERNATE 1
-            h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
-            h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
-        elif self.middle_fusion_type == 'self-attention':
+            h_va = self.va1(x_a, x_v)
+            h_av = self.av1(x_v, h_va)
+            
+            # REVERSE
+            #h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
+            #h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
+        elif self.middle_fusion_type == 'self-attention': # VIDEO REFUSE
             # MIDDLE FUSION ALTERNATE 2
-            h_av = self.av1(x_v, x_v)  # Video self-attention
-            h_va = self.va1(x_a, x_a)  # Audio self-attention
+            # h_av = self.av1(x_v, x_a)
+            # h_va = self.va1(x_a, h_av)
+            
+            # OVERLOAD
+            # h_av = self.av1(x_v, x_v)  # Video self-attention
+            # h_va = self.va1(x_a, x_a)  # Audio self-attention
+            
+            # TRUE SELF ATTENTION
+            h_va = self.va1(x_v, x_v)  # Video self-attention
+            h_av = self.av1(x_a, x_a)  # Audio self-attention
         elif self.middle_fusion_type == 'cross-attention':
             # MIDDLE FUSION ALTERNATE 3
             h_av1 = self.av1(x_a, x_v)  # Audio features are queries to the video

@@ -28,7 +28,7 @@ class BaseDataSetLoader(LightningDataModule, ABC):
         self.take_num = take_num
 
         self.name_list = list(
-            filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}.txt")).split("\n")))
+            filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}_MFCC.txt")).split("\n")))
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
