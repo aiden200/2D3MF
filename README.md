@@ -188,10 +188,10 @@ python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 Split the train val and test sets.
 Run:
 ```bash
-python3 preprocess/gen_split.py --data_dir [Dataset_Dir]
+python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
 ```
 
-Optionally, if Forensics++ is the dataset being split, add the `--Forensics` flag when running the command above.
+
 
 <!-- <details>
   <summary>Forensics++</summary>
@@ -244,7 +244,7 @@ python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir 
 Run:
 
 ```bash
-python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_base_ytf --audio_backbone MFCC
+python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_small_ytf --audio_backbone eat
 ```
 
 Optionally add the `--Forensics` flag in the end if Forensics++ is the dataset being processed.
@@ -272,7 +272,7 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path 2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 500 --dataset Forensics++
+python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path ../2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300 
 
 
 

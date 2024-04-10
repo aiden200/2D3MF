@@ -83,7 +83,8 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = 768
         elif audio_backbone == "xvectors":
             #TODO: Set self.audio_hidden_layers to the correct dimension 
-            pass
+            self.audio_hidden_layers = 768
+            self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
         elif audio_backbone == "emotion2vec":
             #TODO: Set self.audio_hidden_layers to the correct dimension
             pass
@@ -202,7 +203,10 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-            
+        
+        if self.audio_backbone == "xvectors":
+            x_a = self.fc_xvec(x_a) # project embedding 7205 -> 128  
+
 
         if self.audio_pe:
             # (B, T, E)
