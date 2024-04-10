@@ -218,7 +218,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             h_av = self.av1(x_v, x_a)  # Audio features are queries to the video
             h_va = self.va1(x_a, x_v)  # Video features are queries to the audio
         elif self.middle_fusion_type == 'alternate1': # AUDIO-REFUSE
-            # MIDDLE FUSION ALTERNATE 1
+            # AUDIO-REFUSE
             h_va = self.va1(x_a, x_v)
             h_av = self.av1(x_v, h_va)
             
@@ -226,7 +226,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             #h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
             #h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
         elif self.middle_fusion_type == 'self-attention': # VIDEO REFUSE
-            # MIDDLE FUSION ALTERNATE 2
+            # VIDEO REFUSE
             # h_av = self.av1(x_v, x_a)
             # h_va = self.va1(x_a, h_av)
             
