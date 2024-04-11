@@ -11,7 +11,7 @@ from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from model.transformer_blocks import AttentionBlock, PositionalEncoding
-from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool
+from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
 
 import torch.nn as nn
 import time
@@ -81,9 +81,10 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = self.hidden_layers
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
+            self.eat_down = EatConvBlock() # brings (B, 512, 768) -> (B, 128, 768)
         elif audio_backbone == "xvectors":
-            #TODO: Set self.audio_hidden_layers to the correct dimension 
-            pass
+            self.audio_hidden_layers = 768
+            self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
         elif audio_backbone == "emotion2vec":
             #TODO: Set self.audio_hidden_layers to the correct dimension
             pass
@@ -202,7 +203,11 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_a = self.audio_model_cnn.forward(x_a)
             x_a = x_a.view(
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
-            
+        elif self.audio_backbone == "xvectors":
+            x_a = self.fc_xvec(x_a) # project embedding 7205 -> 128  
+        elif self.audio_backbone == "eat":
+            x_a = self.eat_down(x_a) # (B, 512, 768) -> (B, 128, 768) 
+
 
         if self.audio_pe:
             # (B, T, E)
@@ -217,14 +222,26 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             # DEFAULT MIDDLE FUSION
             h_av = self.av1(x_v, x_a)  # Audio features are queries to the video
             h_va = self.va1(x_a, x_v)  # Video features are queries to the audio
-        elif self.middle_fusion_type == 'alternate1':
-            # MIDDLE FUSION ALTERNATE 1
-            h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
-            h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
-        elif self.middle_fusion_type == 'self-attention':
-            # MIDDLE FUSION ALTERNATE 2
-            h_av = self.av1(x_v, x_v)  # Video self-attention
-            h_va = self.va1(x_a, x_a)  # Audio self-attention
+        elif self.middle_fusion_type == 'alternate1': # AUDIO-REFUSE
+            # AUDIO-REFUSE
+            h_va = self.va1(x_a, x_v)
+            h_av = self.av1(x_v, h_va)
+            
+            # REVERSE
+            #h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
+            #h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
+        elif self.middle_fusion_type == 'self-attention': # VIDEO REFUSE
+            # VIDEO REFUSE
+            # h_av = self.av1(x_v, x_a)
+            # h_va = self.va1(x_a, h_av)
+            
+            # OVERLOAD
+            # h_av = self.av1(x_v, x_v)  # Video self-attention
+            # h_va = self.va1(x_a, x_a)  # Audio self-attention
+            
+            # TRUE SELF ATTENTION
+            h_va = self.va1(x_v, x_v)  # Video self-attention
+            h_av = self.av1(x_a, x_a)  # Audio self-attention
         elif self.middle_fusion_type == 'cross-attention':
             # MIDDLE FUSION ALTERNATE 3
             h_av1 = self.av1(x_a, x_v)  # Audio features are queries to the video

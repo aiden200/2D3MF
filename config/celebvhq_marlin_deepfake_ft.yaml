@@ -1,6 +1,7 @@
 model_name: "celebvhq_marlin_deepfake_ft"
 backbone: "marlin_vit_small_ytf"
-dataset: "celebvhq"
+training_datasets: ["DFDC"] #DeepfakeTIMIT,RAVDESS, Forensics++, DFDC, FakeAVCeleb
+eval_datasets: ["DFDC"]
 task: "deepfake"
 temporal_reduction: "mean"
 learning_rate: 1.00e-3
@@ -13,5 +14,5 @@ fusion: "mf"
 audio_positional_encoding: True
 hidden_layers: 128
 lp_only: False
-audio_backbone: "MFCC" # MFCC, eat, xvectors, resnet, emotion2vec
-middle_fusion_type: "default" # alternate1, self-attention, cross-attention
+audio_backbone: "eat" # MFCC, eat, xvectors, resnet, emotion2vec
+middle_fusion_type: "default" # default, alternate1, self-attention, cross-attention

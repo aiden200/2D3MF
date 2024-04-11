@@ -45,12 +45,13 @@ def marlin_video_extraction(save_path, video_model, video_path, config):
     
     return video_embeddings
 
-def get_eat(video_name, dataset_dir, raw_audio_path, video_path):
-    audio_name = video_name.split("_")[0]
-    audio_name = audio_name.split("-")[0]
+def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
+
+
     if not os.path.exists(os.path.join(dataset_dir, "eat", audio_name + ".npy")):
+        print(os.path.join(dataset_dir, "eat", audio_name + ".npy"))
         audio_save_path = os.path.join(dataset_dir, "eat")
-        return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".mp3", new_filename=video_name.replace(".mp4", ".npy"))
+        return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".wav", new_filename=video_name.replace(".mp4", ".npy"))
         if return_code != 0:
             print(f"Eat feature extraction: {video_path} error.")
     
@@ -192,11 +193,29 @@ if __name__ == '__main__':
     corrupted_files = []
 
     for video_name in tqdm(all_videos):
-        save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
-        video_path = save_path
-        audio_path = save_path.replace(".mp4", ".wav")
+        video_save_path = os.path.join(dataset_dir, feat_dir_video, video_name.replace(".mp4", ".npy"))
+        video_path = os.path.join(raw_video_path, video_name)
+        alt_video_path = os.path.join(raw_video_path, f"{video_name.split('-')[0]}.mp4")
+
+        audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
+        audio_path = os.path.join(raw_audio_path, video_name.replace(".mp4", ".wav"))
+        alt_audio_path = os.path.join(raw_audio_path, f"{video_name[:-4].split('-')[0]}.wav")
+        if args.Forensics:
+            audio_path = os.path.join(raw_audio_path, f"{video_name[:-4].split('_')[0]}.wav")            
+        
+        if not os.path.exists(audio_path) and os.path.exists(alt_audio_path):
+            audio_path = alt_audio_path
+        if not os.path.exists(video_path) and os.path.exists(alt_video_path):
+            video_path = alt_video_path
+        
+        base_name = os.path.basename(audio_path)
+        audio_name, _ = os.path.splitext(base_name)
+
+        # Optionally, create .wav files if .mp3 files exists
+
         # Only extract video and audio if both exist
         if not all(os.path.exists(path) for path in [video_path, audio_path]):
+            print(f"File {video_path} or {audio_path} does not exist!")
             continue 
         try:
             # Video Feature Extraction
@@ -233,7 +252,7 @@ if __name__ == '__main__':
             elif args.audio_backbone == "emotion2vec":
                 #TODO: Implement
                 pass
-
+              
         except Exception as e:
             print(f"Video {video_path} error.", e)
             corrupted_files.append(video_name[:-4])

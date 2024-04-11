@@ -19,16 +19,58 @@ from dataset.utils import *
 
 class BaseDataSetLoader(LightningDataModule, ABC):
 
-    def __init__(self, data_root: str, split: str, task: str, data_ratio: float = 1.0, take_num: int = None):
+    def __init__(self, data_root: str, split:str, training_datasets: list, eval_datasets: list, task: str, data_ratio: float = 1.0, take_num: int = None):
         super().__init__()
         self.data_root = data_root
         self.split = split
         assert task in ("appearance", "action", "deepfake")
         self.task = task
         self.take_num = take_num
+        self.name_list = []
 
-        self.name_list = list(
-            filter(lambda x: x != "", read_text(os.path.join(data_root, f"{self.split}.txt")).split("\n")))
+        if "train" in split:
+            for dataset in training_datasets:
+                # contain all splits
+                dataset_path = os.path.join(data_root, dataset)
+                if dataset not in eval_datasets:
+                    for dataset_split in [split, split.replace("train", "test")]:
+                        path = os.path.join(dataset_path, f"{dataset_split}.txt")
+                        assert os.path.exists(path), f"Missing split {path}"
+                        files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                        self.name_list += [(dataset_path, x) for x in files]
+                else:
+                    path = os.path.join(dataset_path, f"{split}.txt")
+                    assert os.path.exists(path), f"Missing split {path}"
+                    files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                    self.name_list += [(dataset_path, x) for x in files]
+
+        elif "val" in split: # only test datasets are included in val
+            for dataset in training_datasets:
+                
+                dataset_path = os.path.join(data_root, dataset)
+                path = os.path.join(dataset_path, f"{split}.txt")
+                assert os.path.exists(path), f"Missing split {path}"
+                files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                self.name_list += [(dataset_path, x) for x in files]
+                
+        else:
+            for dataset in training_datasets:
+
+                dataset_path = os.path.join(data_root, dataset)
+                if dataset not in training_datasets:
+                    for dataset_split in [split, split.replace("test", "train"), split.replace("test", "val")]:
+                        path = os.path.join(dataset_path, f"{dataset_split}.txt")
+                        assert os.path.exists(path), f"Missing split {path}"
+                        files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                        self.name_list += [(dataset_path, x) for x in files]
+                else:
+                    path = os.path.join(dataset_path, f"{split}.txt")
+                    assert os.path.exists(path), f"Missing split {path}"
+                    files = list(filter(lambda x: x != "", read_text(path).split("\n")))
+                    self.name_list += [(dataset_path, x) for x in files]
+
+        
+
 
         if data_ratio < 1.0:
             self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
@@ -52,6 +94,8 @@ class FTDataset(BaseDataSetLoader):
         root_dir: str,
         split: str,
         task: str,
+        training_datasets: list,
+        eval_datasets: list,
         clip_frames: int,
         temporal_sample_rate: int,
         data_ratio: float = 1.0,
@@ -67,7 +111,7 @@ class FTDataset(BaseDataSetLoader):
 
     def __getitem__(self, index: int):
         # y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
-        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake        
+        y = int(self.name_list[index].split("-")[-1]) # should be 0-real, 1-fake        
         video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
         if self.audio_feature == "mfcc":
             audio_feature_dir = "audio_features"
@@ -179,6 +223,8 @@ class LPFeaturesDataset(BaseDataSetLoader):
     def __init__(self, root_dir: str,
         feature_dir: str,
         split: str,
+        training_datasets: list,
+        eval_datasets: list,
         task: str,
         temporal_reduction: str,
         data_ratio: float = 1.0,
@@ -186,17 +232,17 @@ class LPFeaturesDataset(BaseDataSetLoader):
         temporal_axis: int = 14,
         audio_feature: str = "MFCC"
     ):
-        super().__init__(root_dir, split, task, data_ratio, take_num)
+        super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
 
     def __getitem__(self, index: int):
-        feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+        feat_path = os.path.join(self.name_list[index][0], self.feature_dir, self.name_list[index][1] + ".npy")
 
         audio_feature_dir = self.audio_feature
-        audio_path = os.path.join(self.data_root, audio_feature_dir, self.name_list[index] + ".npy")
+        audio_path = os.path.join(self.name_list[index][0], audio_feature_dir, self.name_list[index][1] + ".npy")
         
 
         x_v = torch.from_numpy(np.load(feat_path)).float()
@@ -226,7 +272,13 @@ class LPFeaturesDataset(BaseDataSetLoader):
                 print("Error: audio features are ill shaped")
         elif self.audio_feature == "xvectors":
             #TODO: Implement feature extraction logic
-            pass
+            if x_v.shape[0] > self.temporal_axis:
+                x_v = x_v[:self.temporal_axis]
+                x_a = x_a[:self.temporal_axis]
+            else:
+                n_pad = self.temporal_axis - x_v.shape[0]
+                x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
+                x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1])), dim=0)
         elif self.audio_feature == "resnet":
             #TODO: Implement feature extraction logic
             pass
@@ -235,7 +287,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
             pass 
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
-        y = int(self.name_list[index].split("-")[1]) # should be 0-real, 1-fake
+        y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
         
         # print(x_a.shape, x_v.shape)
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
@@ -257,7 +309,9 @@ class DataModule(LightningDataModule):
         take_val: Optional[int] = None,
         take_test: Optional[int] = None,
         temporal_axis: float = 1.0,
-        audio_feature: str = "mfcc"
+        audio_feature: str = "MFCC",
+        training_datasets: list = [],
+        eval_datasets: list = []
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -282,6 +336,9 @@ class DataModule(LightningDataModule):
         else:
             assert feature_dir is not None
             assert temporal_reduction is not None
+        
+        self.training_datasets = training_datasets
+        self.eval_datasets = eval_datasets
 
         self.train_dataset = None
         self.val_dataset = None
@@ -289,18 +346,18 @@ class DataModule(LightningDataModule):
 
     def setup(self, stage=None):
         if self.load_raw:
-            self.train_dataset = FTDataset(self.root_dir, "train", self.task, self.clip_frames,
+            self.train_dataset = FTDataset(self.root_dir, f"train_{self.audio_feature}", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.val_dataset = FTDataset(self.root_dir, "val", self.task, self.clip_frames,
+            self.val_dataset = FTDataset(self.root_dir, f"val_{self.audio_feature}", self.task, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.test_dataset = FTDataset(self.root_dir, "test", self.task, self.clip_frames,
+            self.test_dataset = FTDataset(self.root_dir, f"test_{self.audio_feature}", self.task, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
-            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "train", self.task,
+            self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "val", self.task,
+            self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
-            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, "test", self.task,
+            self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
                 self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
 
     def train_dataloader(self):
