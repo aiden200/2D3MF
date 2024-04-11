@@ -89,7 +89,7 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = 768
         elif audio_backbone == "resnet":
             #TODO: Set self.audio_hidden_layers to the correct dimension
-            pass
+            self.audio_hidden_layers = 512
         else:
             raise ValueError("Unsupported audio backbone: Must be one of (MFCC, eat, xvectors, emotion2vec, resnet)")
         # add resenet and stuff
