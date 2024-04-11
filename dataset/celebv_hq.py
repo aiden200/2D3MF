@@ -279,9 +279,11 @@ class LPFeaturesDataset(BaseDataSetLoader):
         elif self.audio_feature == "emotion2vec":
             if x_a.dim() == 2:
                 if x_a.shape[0] > self.temporal_axis:
+                    x_v = x_v[:self.temporal_axis]
                     x_a = x_a[:self.temporal_axis]
                 else:
                     n_pad = self.temporal_axis - x_a.shape[0]
+                    x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
                     x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1])), dim=0)
             else:
                 print("Error: 'emotion2vec' audio features are ill shaped, expected a 2D array")
