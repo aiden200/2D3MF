@@ -16,3 +16,4 @@ hidden_layers: 128
 lp_only: False
 audio_backbone: "eat" # MFCC, eat, xvectors, resnet, emotion2vec
 middle_fusion_type: "default" # default, alternate1, self-attention, cross-attention
+modality_dropout: 0.4
