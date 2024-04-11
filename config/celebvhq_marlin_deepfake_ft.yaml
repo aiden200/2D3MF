@@ -14,5 +14,5 @@ fusion: "mf"
 audio_positional_encoding: True
 hidden_layers: 128
 lp_only: False
-audio_backbone: "eat" # MFCC, eat, xvectors, resnet, emotion2vec
+audio_backbone: "resnet" # MFCC, eat, xvectors, resnet, emotion2vec
 middle_fusion_type: "default" # default, alternate1, self-attention, cross-attention
