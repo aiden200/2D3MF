@@ -231,7 +231,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
         take_num: Optional[int] = None,
         temporal_axis: int = 14,
         audio_feature: str = "MFCC",
-        modality_dropout: float = 0.2
+        modality_dropout: float = 0.0
     ):
         super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
         self.split = split
@@ -329,7 +329,7 @@ class DataModule(LightningDataModule):
         audio_feature: str = "MFCC",
         training_datasets: list = [],
         eval_datasets: list = [],
-        modality_dropout: float = 0.2
+        modality_dropout: float = 0.0
     ):
         super().__init__()
         self.root_dir = root_dir

@@ -85,6 +85,7 @@ def train(args, config):
         )
 
     else:
+
         model = TD3MF(
             num_classes, config["backbone"], False,
             None, "binary", learning_rate, args.n_gpus > 1,
@@ -235,6 +236,7 @@ def evaluate(args):
         
         ckpt, dm = train(args, config)
         # print(f"ckpt: {ckpt}, dm: {dm}")
+        # print(ckpt)
         eval_dataset(args, ckpt, dm)
 
 
