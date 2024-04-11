@@ -41,6 +41,10 @@ def train(args, config):
     middle_fusion_type = config['middle_fusion_type']
     training_datasets = config['training_datasets']
     eval_datasets = config['eval_datasets']
+    if 'modality_dropout' in config:
+        modality_dropout = config['modality_dropout']
+    else:
+        modality_dropout = 0
 
     available_datasets = ["DeepfakeTIMIT", "DFDC", "FakeAVCeleb", "Forensics++", "RAVDESS"]
     for dataset in training_datasets + eval_datasets:
@@ -77,10 +81,11 @@ def train(args, config):
             temporal_sample_rate=2, temporal_axis=temporal_axis,
             audio_feature=audio_backbone,
             training_datasets=training_datasets,
-            eval_datasets=eval_datasets
+            eval_datasets=eval_datasets, modality_dropout=modality_dropout
         )
 
     else:
+
         model = TD3MF(
             num_classes, config["backbone"], False,
             None, "binary", learning_rate, args.n_gpus > 1,
@@ -98,7 +103,7 @@ def train(args, config):
             temporal_axis=temporal_axis,
             audio_feature=audio_backbone,
             training_datasets=training_datasets,
-            eval_datasets=eval_datasets
+            eval_datasets=eval_datasets, modality_dropout=modality_dropout
         )
 
     if args.skip_train:
@@ -231,6 +236,7 @@ def evaluate(args):
         
         ckpt, dm = train(args, config)
         # print(f"ckpt: {ckpt}, dm: {dm}")
+        # print(ckpt)
         eval_dataset(args, ckpt, dm)
 
 

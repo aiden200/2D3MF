@@ -230,13 +230,16 @@ class LPFeaturesDataset(BaseDataSetLoader):
         data_ratio: float = 1.0,
         take_num: Optional[int] = None,
         temporal_axis: int = 14,
-        audio_feature: str = "MFCC"
+        audio_feature: str = "MFCC",
+        modality_dropout: float = 0.0
     ):
         super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
+        self.split = split
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
+        self.modality_dropout = modality_dropout
 
     def __getitem__(self, index: int):
         feat_path = os.path.join(self.name_list[index][0], self.feature_dir, self.name_list[index][1] + ".npy")
@@ -296,6 +299,13 @@ class LPFeaturesDataset(BaseDataSetLoader):
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
         y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
         
+        if self.modality_dropout > 0:
+            if torch.rand(1).item() < self.modality_dropout:
+                if torch.rand(1).item() < .5:
+                    x_v = torch.randn(x_v.size())
+                else:
+                    x_a = torch.randn(x_a.size())
+        
         # print(x_a.shape, x_v.shape)
         return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
 
@@ -318,7 +328,8 @@ class DataModule(LightningDataModule):
         temporal_axis: float = 1.0,
         audio_feature: str = "MFCC",
         training_datasets: list = [],
-        eval_datasets: list = []
+        eval_datasets: list = [],
+        modality_dropout: float = 0.0
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -336,6 +347,7 @@ class DataModule(LightningDataModule):
         self.take_test = take_test
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
+        self.modality_dropout = modality_dropout
 
         if load_raw:
             assert clip_frames is not None
@@ -361,11 +373,11 @@ class DataModule(LightningDataModule):
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
             self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
+                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, modality_dropout=self.modality_dropout)
             self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
+                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature,modality_dropout=0)
             self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
+                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, modality_dropout=0)
 
     def train_dataloader(self):
         return DataLoader(
