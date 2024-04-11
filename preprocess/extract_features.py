@@ -113,7 +113,7 @@ def extract_audio_resnet(audio_path, audio_model, n_feats):
         audio_features.append(audio_feat)
     audio_features = [arr.unsqueeze(0) for arr in audio_features]
     audio_features = torch.cat(audio_features, dim=0)
-    return audio_features  # (n_feats, n_embedding)
+    return audio_features.numpy(force=True)  # (n_feats, n_embedding)
 
 
 def extract_audio(audio_path, audio_model, n_feats):
