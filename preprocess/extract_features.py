@@ -219,7 +219,7 @@ if __name__ == '__main__':
             continue 
         try:
             # Video Feature Extraction
-            video_embeddings = marlin_video_extraction(save_path, video_model, video_path, config)
+            video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
 
             # Audio Feature Extraction
             dup = False
