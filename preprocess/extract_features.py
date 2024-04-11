@@ -220,7 +220,11 @@ if __name__ == '__main__':
         try:
             # Video Feature Extraction
             video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
-
+        except Exception as e:
+            print(f"Video {video_path} error.", e)
+            corrupted_files.append(video_name[:-4])
+            continue
+        try:
             # Audio Feature Extraction
             dup = False
             if args.Forensics:
@@ -254,6 +258,6 @@ if __name__ == '__main__':
                 pass
               
         except Exception as e:
-            print(f"Video {video_path} error.", e)
+            print(f"Audio {audio_path} error.", e)
             corrupted_files.append(video_name[:-4])
             continue
