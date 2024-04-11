@@ -175,17 +175,15 @@ if __name__ == '__main__':
     data_root = args.data_dir
     feat_type = args.feat_type
 
-    if not os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")) or \
-        not os.path.exists(os.path.join(data_root, f"val_{feat_type}.txt")) or \
-        not os.path.exists(os.path.join(data_root, f"test_{feat_type}.txt")):
-        if "Forensics++" in data_root:
-            ff_split_dataset(data_root, args.test, args.val, feat_type)
-        elif "DeepfakeTIMIT" in data_root:
-            split_DeepfakeTIMIT(data_root, args.test, args.val, feat_type)
-        elif "FakeAVCeleb" in data_root:
-            split_fakeAVCeleb(data_root, args.test, args.val, feat_type)
-        else:
-            split_dataset(data_root, args.test, args.val, feat_type)
+
+    if "Forensics++" in data_root:
+        ff_split_dataset(data_root, args.test, args.val, feat_type)
+    elif "DeepfakeTIMIT" in data_root:
+        split_DeepfakeTIMIT(data_root, args.test, args.val, feat_type)
+    elif "FakeAVCeleb" in data_root:
+        split_fakeAVCeleb(data_root, args.test, args.val, feat_type)
+    else:
+        split_dataset(data_root, args.test, args.val, feat_type)
          
     assert os.path.exists(os.path.join(data_root, f"train_{feat_type}.txt")), "Something went wrong creating split files."
     files = [f"train_{feat_type}.txt", f"val_{feat_type}.txt", f"test_{feat_type}.txt"]
