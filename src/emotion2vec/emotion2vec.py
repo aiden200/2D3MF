@@ -4,6 +4,7 @@ import os
 import numpy as np
 import tempfile
 import soundfile as sf
+import torch
 
 
 class Emotion2vec(object):
@@ -14,23 +15,14 @@ class Emotion2vec(object):
             model_revision=model_revision)
 
     def __call__(self, audio_input, sr=44100, granularity="utterance", extract_embedding=True):
-        # Check if the input is a file path (str) or a NumPy array
-        if isinstance(audio_input, list):
-            # Change datatype from list to np array:
-            audio_input = np.array(audio_input)
-            # Handle NumPy array: save it as a temporary audio file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmpfile:
-                sf.write(tmpfile.name, audio_input, sr)
-                audio_path = tmpfile.name
-        else:
-            # If it's a string, assume it's a file path
-            audio_path = audio_input
+        # Check if the audio_input is empty
+        if audio_input.size == 0:
+            # Pad with zeros if the array is empty
+            audio_input = np.zeros(sr, dtype=np.float32)
+
+        audio_input = audio_input
 
         # Execute the pipeline with the provided (or temporary) audio file path
-        rec_result = self.inference_pipeline(audio_path, granularity=granularity, extract_embedding=extract_embedding)
-
-        # Optionally delete the temporary file if input was a NumPy array
-        if isinstance(audio_input, list):
-            os.remove(audio_path)
+        rec_result = self.inference_pipeline(audio_input, granularity=granularity, extract_embedding=extract_embedding)
 
         return rec_result[0]['feats']
