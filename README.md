@@ -1,7 +1,7 @@
 # 2D3MF: Deepfake Detection using Multi Modal Middle Fusion
 
 <div align="center">
-    <img src="assets/architecture.png" width="500" height="500">
+    <img src="assets/architecture.jpeg" width="500" height="500">
 </div>
 
 <!--<div>-->
@@ -185,9 +185,6 @@ Run:
 python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 ```
 
-
-
-
 <!-- <details>
   <summary>Forensics++</summary>
 
@@ -246,6 +243,7 @@ Optionally add the `--Forensics` flag in the end if Forensics++ is the dataset b
 
 Split the train val and test sets.
 Run:
+
 ```bash
 python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
 ```
@@ -273,7 +271,7 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path ../2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300 
+python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path ../2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300
 
 
 
@@ -330,4 +328,4 @@ is from [Self-attention fusion for audiovisual emotion recognition with incomple
 
 Our Audio Feature Extraction Models:
 
- - [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
+- [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
