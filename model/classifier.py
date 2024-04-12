@@ -86,8 +86,7 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = 768
             self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
         elif audio_backbone == "emotion2vec":
-            #TODO: Set self.audio_hidden_layers to the correct dimension
-            pass
+            self.audio_hidden_layers = 768
         elif audio_backbone == "resnet":
             #TODO: Set self.audio_hidden_layers to the correct dimension
             self.audio_hidden_layers = 512
