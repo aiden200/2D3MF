@@ -235,7 +235,8 @@ if __name__ == '__main__':
                 continue
             
             if args.audio_backbone == "eat":
-                corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path)
+                corrupted = audio_model(video_name, dataset_dir, raw_audio_path, video_path, video_name[:-4])
+                
                 if corrupted != 0:
                     corrupted_files.append(corrupted)
             elif args.audio_backbone == "MFCC": # For MFCC
