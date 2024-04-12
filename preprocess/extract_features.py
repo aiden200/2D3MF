@@ -111,7 +111,6 @@ def extract_audio_resnet(audio_path, audio_model, n_feats):
         audio_buffer = audio[start_idx:start_idx + sr]  # take 1sec audio windows
         audio_feat = audio_model(torch.from_numpy(get_mfccs(audio_buffer)))  # compute embeddings using audio_model
         audio_features.append(audio_feat)
-    audio_features = [arr.unsqueeze(0) for arr in audio_features]
     audio_features = torch.cat(audio_features, dim=0)
     return audio_features.numpy(force=True)  # (n_feats, n_embedding)
 

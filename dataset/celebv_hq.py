@@ -284,7 +284,6 @@ class LPFeaturesDataset(BaseDataSetLoader):
                 x_v = torch.cat((x_v, torch.zeros(n_pad, x_v.shape[1])), dim=0)
                 x_a = torch.cat((x_a, torch.zeros(n_pad, x_a.shape[1])), dim=0)
         elif self.audio_feature == "resnet":
-            x_a = x_a.squeeze(1)
             if x_v.shape[0] > self.temporal_axis:
                 x_v = x_v[:self.temporal_axis]
                 x_a = x_a[:self.temporal_axis]
