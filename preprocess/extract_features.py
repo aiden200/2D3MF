@@ -260,21 +260,6 @@ if __name__ == '__main__':
                     assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
                     audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
                     np.save(audio_save_path, audio_embeddings)
-            elif args.audio_backbone == "xvectors":
-                audio_embeddings = extract_audio_xvectors(audio_path, audio_model, video_embeddings.shape[0])
-                assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
-                audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-                np.save(audio_save_path, audio_embeddings)
-            elif args.audio_backbone == "resnet":
-                audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
-                assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
-                audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-                np.save(audio_save_path, audio_embeddings)
-            elif args.audio_backbone == "emotion2vec":
-                audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
-                assert audio_embeddings.shape[0] == video_embeddings.shape[0], "Video and audio n_feats dimension do not match"
-                audio_save_path = os.path.join(dataset_dir, feat_dir_audio, video_name.replace(".mp4", ".npy"))
-                np.save(audio_save_path, audio_embeddings)
 
         except Exception as e:
             print(f"Audio {audio_path} error.", e)

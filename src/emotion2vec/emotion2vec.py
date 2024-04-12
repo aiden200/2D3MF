@@ -15,12 +15,16 @@ class Emotion2vec(object):
             model_revision=model_revision)
 
     def __call__(self, audio_input, sr=44100, granularity="utterance", extract_embedding=True):
-        # Check if the audio_input is empty
-        if audio_input.size == 0:
-            # Pad with zeros if the array is empty
-            audio_input = np.zeros(sr, dtype=np.float32)
-
-        audio_input = audio_input
+        # Check the audio_input size
+        curr_size = audio_input.size
+        if curr_size < sr:
+            # Pad with zeros
+            padding_size = sr - curr_size
+            padding = np.zeros(padding_size, dtype=np.float32)
+            audio_input = np.concatenate((audio_input, padding))
+        elif curr_size > sr:
+            # If the array is longer, truncate it to 'sr'
+            audio_input = audio_input[:sr]
 
         # Execute the pipeline with the provided (or temporary) audio file path
         rec_result = self.inference_pipeline(audio_input, granularity=granularity, extract_embedding=extract_embedding)
