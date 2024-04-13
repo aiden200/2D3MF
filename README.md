@@ -199,9 +199,9 @@ After this, you should have a directory with the following structure:
 
 ### 2. Preprocess the dataset
 
-<details>
-  <summary>We recommend using the following unified dataset structure </summary>
-```shell
+We recommend using the following unified dataset structure
+
+```
 2D3MF_Dataset/
 ├── DeepfakeTIMIT
 │   ├── audio/*.wav
@@ -219,7 +219,6 @@ After this, you should have a directory with the following structure:
     ├── audio/*.wav
     └── video/*.mp4
 ```
-</details>
 
 Crop the face region from the raw video.
 Run:
