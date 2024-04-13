@@ -81,14 +81,15 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = self.hidden_layers
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
-            self.eat_down = EatConvBlock() # brings (B, 512, 768) -> (B, 128, 768)
+            downsample = False
+
+            self.eat_down = EatConvBlock(downsample) # brings (B, 512, 768) -> (B, 128, 768). Downsample brings it to (B, 10, 768)
         elif audio_backbone == "xvectors":
             self.audio_hidden_layers = 768
             self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
         elif audio_backbone == "emotion2vec":
             self.audio_hidden_layers = 768
         elif audio_backbone == "resnet":
-            #TODO: Set self.audio_hidden_layers to the correct dimension
             self.audio_hidden_layers = 512
         else:
             raise ValueError("Unsupported audio backbone: Must be one of (MFCC, eat, xvectors, emotion2vec, resnet)")
@@ -129,14 +130,25 @@ class TD3MF(LightningModule):
         
         self.av1 = AttentionBlock(
             in_dim_k=self.hidden_layers, 
-            in_dim_q=self.audio_hidden_layers, #audio hidden layers 
-            out_dim=self.audio_hidden_layers, #audio hidden layers 
+            in_dim_q=self.audio_hidden_layers, 
+            out_dim=self.audio_hidden_layers, 
             num_heads=num_heads)
         self.va1 = AttentionBlock(
-            in_dim_k=self.audio_hidden_layers, #audio hidden layers 
+            in_dim_k=self.audio_hidden_layers, 
             in_dim_q=self.hidden_layers, 
             out_dim=self.hidden_layers, 
             num_heads=num_heads)  
+        if self.middle_fusion_type == 'self_attention' or self.middle_fusion_type == 'self_cross_attention':
+            self.vv = AttentionBlock(
+                in_dim_k=self.hidden_layers, 
+                in_dim_q=self.hidden_layers, 
+                out_dim=self.hidden_layers, 
+                num_heads=num_heads)
+            self.aa = AttentionBlock(
+                in_dim_k=self.audio_hidden_layers, 
+                in_dim_q=self.audio_hidden_layers, 
+                out_dim=self.audio_hidden_layers, 
+                num_heads=num_heads)
         self.av2 = AttentionBlock(
             in_dim_k=self.audio_hidden_layers, #audio hidden layers
             in_dim_q=self.hidden_layers,
@@ -219,38 +231,33 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         if self.middle_fusion_type == 'default':
             # DEFAULT MIDDLE FUSION
-            h_av = self.av1(x_v, x_a)  # Audio features are queries to the video
-            h_va = self.va1(x_a, x_v)  # Video features are queries to the audio
-        elif self.middle_fusion_type == 'alternate1': # AUDIO-REFUSE
-            # AUDIO-REFUSE
+            h_av = self.av1(x_v, x_a)  
+            h_va = self.va1(x_a, x_v)  
+        elif self.middle_fusion_type == 'audio_refuse': 
             h_va = self.va1(x_a, x_v)
-            h_av = self.av1(x_v, h_va)
-            
-            # REVERSE
-            #h_av = self.av1(x_a, x_v)  # Video features are queries to the audio
-            #h_va = self.va1(x_v, x_a)  # Audio features are queries to the video
-        elif self.middle_fusion_type == 'self-attention': # VIDEO REFUSE
-            # VIDEO REFUSE
-            # h_av = self.av1(x_v, x_a)
-            # h_va = self.va1(x_a, h_av)
-            
-            # OVERLOAD
-            # h_av = self.av1(x_v, x_v)  # Video self-attention
-            # h_va = self.va1(x_a, x_a)  # Audio self-attention
-            
-            # TRUE SELF ATTENTION
-            h_va = self.va1(x_v, x_v)  # Video self-attention
-            h_av = self.av1(x_a, x_a)  # Audio self-attention
-        elif self.middle_fusion_type == 'cross-attention':
-            # MIDDLE FUSION ALTERNATE 3
-            h_av1 = self.av1(x_a, x_v)  # Audio features are queries to the video
-            h_va1 = self.va1(x_v, x_a)  # Video features are queries to the audio
-            h_av2 = self.av2(h_av1, x_v)  # Updated audio queries to the original/updated video
-            h_va2 = self.va2(h_va1, x_a)  # Updated video queries to the original/updated audio
-            
-            # Combine the second attention block outputs
+            h_av = self.av1(x_v*h_va, x_a)
+        elif self.middle_fusion_type == 'video_refuse':
+            h_av = self.av1(x_v, x_a)  
+            h_va = self.va1(x_a*h_av, x_v) 
+        elif self.middle_fusion_type == 'self_attention':
+            h_va = self.vv(x_v, x_v) 
+            h_av = self.aa(x_a, x_a) 
+        elif self.middle_fusion_type == 'multi_attention':
+            h_av1 = self.av1(x_v, x_a)  
+            h_va1 = self.va1(x_a, x_v)  
+            x_a = x_a * h_av1
+            x_v = x_v * h_va1
+            h_av2 = self.av1(x_v, x_a)  
+            h_va2 = self.va1(x_a, x_v)
             h_av = h_av2
             h_va = h_va2
+        elif self.middle_fusion_type == "self_cross_attention":
+            h_vv = self.vv(x_v, x_v) 
+            h_aa = self.aa(x_a, x_a)  
+            x_v = x_v * h_vv
+            x_a = x_a * h_aa
+            h_av = self.av1(x_v, x_a)  
+            h_va = self.va1(x_a, x_v) 
         else:
             raise ValueError(f"Incorrect middle fusion type: {self.middle_fusion_type}\nMust be one of (default, alternate1, self-attention, cross-attention)")
         
