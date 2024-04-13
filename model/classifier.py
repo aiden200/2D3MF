@@ -71,7 +71,7 @@ class TD3MF(LightningModule):
         self.hidden_layers = hidden_layers
         self.audio_backbone = audio_backbone
         self.middle_fusion_type = middle_fusion_type
-        self.out_dim = 128
+        self.out_dim = self.hidden_layers
         self.audio_pe = None
         self.lf = False
         if fusion == "lf":
