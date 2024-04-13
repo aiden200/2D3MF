@@ -177,6 +177,26 @@ After this, you should have a directory with the following structure:
 
 </details>
 
+<details>
+  <summary>DFDC</summary>
+  Kaggle provides a nice and easy way to download the [DFDC dataset](https://www.kaggle.com/c/deepfake-detection-challenge/data)
+</details>
+
+<details>                    
+  <summary>DeepFakeTIMIT</summary>
+  We recommend downloading the data from the [DeepfakeTIMIT Zenodo Record](https://zenodo.org/records/4068245)
+</details>
+
+<details>                    
+  <summary>FakeAVCeleb</summary>
+  We recommend requesting access to FakeAVCeleb via their [repo README](https://github.com/DASH-Lab/FakeAVCeleb)
+</details>
+
+<details>
+  <summary>RAVDESS</summary>
+  We recommend downloading the data from the [RAVDESS Zenodo Record](https://zenodo.org/records/1188976)
+</details>
+
 ### 2. Preprocess the dataset
 
 Crop the face region from the raw video.
