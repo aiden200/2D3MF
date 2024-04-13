@@ -101,17 +101,19 @@ class VideoCnnPool(nn.Module):
 
 
 class EatConvBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, downsample=False):
         super().__init__()
         self.conv1 = nn.Conv1d(in_channels=768, out_channels=400, kernel_size=3, stride=2, padding=1)
         self.conv2 = nn.Conv1d(in_channels=400, out_channels=768, kernel_size=3, stride=2, padding=1)
-        # self.adaptive_pool = nn.AdaptiveAvgPool1d(10)
+        self.adaptive_pool = nn.AdaptiveAvgPool1d(10)
+        self.downsample = downsample
 
     def forward(self, x):
         x = x.permute(0, 2, 1) # (B, 512, 768) to (B, 768, 512)
         x = self.conv1(x)
         x = self.conv2(x) # (B, 768, 128)
-        # x = self.adaptive_pool(x) 
+        if self.downsample:
+            x = self.adaptive_pool(x) 
         x = x.permute(0, 2, 1) # (B, 128, 768)
         return x
 
