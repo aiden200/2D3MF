@@ -5,30 +5,26 @@
     <img src="assets/github_visualization.png">
 </div>
 
-<!--<div>-->
-<!--    <img src="assets/teaser.svg">-->
-<!--    <p></p>-->
-<!--</div>-->
+<div align="center">
+   <a href="https://github.com/aiden200/2D3MF/stargazers">
+       <img src="https://img.shields.io/github/stars/ControlNet/MARLIN?style=flat-square">
+   </a>
+   <a href="https://github.com/aiden200/2D3MF/issues">
+       <img src="https://img.shields.io/github/issues/ControlNet/MARLIN?style=flat-square">
+   </a>
+   <a href="https://github.com/aiden200/2D3MF/blob/master/LICENSE">
+       <img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-97ca00?style=flat-square">
+   </a>
 
-<!--<div align="center">-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/network/members">-->
-<!--        <img src="https://img.shields.io/github/forks/ControlNet/MARLIN?style=flat-square">-->
-<!--    </a>-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/stargazers">-->
-<!--        <img src="https://img.shields.io/github/stars/ControlNet/MARLIN?style=flat-square">-->
-<!--    </a>-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/issues">-->
-<!--        <img src="https://img.shields.io/github/issues/ControlNet/MARLIN?style=flat-square">-->
-<!--    </a>-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/blob/master/LICENSE">-->
-<!--        <img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-97ca00?style=flat-square">-->
-<!--    </a>-->
-<!--    <a href="https://arxiv.org/abs/2211.06627">-->
-<!--        <img src="https://img.shields.io/badge/arXiv-2211.06627-b31b1b.svg?style=flat-square">-->
-<!--    </a>-->
-<!--</div>-->
+   <!-- <a href="https://arxiv.org/abs/2211.06627">
+       <img src="https://img.shields.io/badge/arXiv-2211.06627-b31b1b.svg?style=flat-square">
+   </a> -->
+</div>
 
-<!--<div align="center">    -->
+<div align="center">   
+   <a href="https://pytorch.org/">
+      <img src="https://img.shields.io/badge/PyTorch-%3E%3D1.8.0-EE4C2C?style=flat-square&logo=pytorch">
+    </a>
 <!--    <a href="https://pypi.org/project/marlin-pytorch/">-->
 <!--        <img src="https://img.shields.io/pypi/v/marlin-pytorch?style=flat-square">-->
 <!--    </a>-->
@@ -36,12 +32,11 @@
 <!--        <img src="https://img.shields.io/pypi/dm/marlin-pytorch?style=flat-square">-->
 <!--    </a>-->
 <!--    <a href="https://www.python.org/"><img src="https://img.shields.io/pypi/pyversions/marlin-pytorch?style=flat-square"></a>-->
-<!--    <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-%3E%3D1.8.0-EE4C2C?style=flat-square&logo=pytorch"></a>-->
-<!--</div>-->
+</div>
 
 <!--<div align="center">-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/actions"><img src="https://img.shields.io/github/actions/workflow/status/ControlNet/MARLIN/unittest.yaml?branch=dev&label=unittest&style=flat-square"></a>-->
-<!--    <a href="https://github.com/ControlNet/MARLIN/actions"><img src="https://img.shields.io/github/actions/workflow/status/ControlNet/MARLIN/release.yaml?branch=master&label=release&style=flat-square"></a>-->
+<!--    <a href="https://github.com/aiden200/2D3MF/actions"><img src="https://img.shields.io/github/actions/workflow/status/ControlNet/MARLIN/unittest.yaml?branch=dev&label=unittest&style=flat-square"></a>-->
+<!--    <a href="https://github.com/aiden200/2D3MF/actions"><img src="https://img.shields.io/github/actions/workflow/status/ControlNet/MARLIN/release.yaml?branch=master&label=release&style=flat-square"></a>-->
 <!--    <a href="https://coveralls.io/github/ControlNet/MARLIN"><img src="https://img.shields.io/coverallsCoverage/github/ControlNet/MARLIN?style=flat-square"></a>-->
 <!--</div>-->
 
