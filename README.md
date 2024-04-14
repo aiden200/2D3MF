@@ -7,24 +7,24 @@
 
 <div align="center">
    <a href="https://github.com/aiden200/2D3MF/stargazers">
-       <img src="https://img.shields.io/github/stars/ControlNet/MARLIN?style=flat-square">
+       <img src="https://img.shields.io/github/stars/aiden200/2D3MF?style=flat-square">
    </a>
    <a href="https://github.com/aiden200/2D3MF/issues">
-       <img src="https://img.shields.io/github/issues/ControlNet/MARLIN?style=flat-square">
+       <img src="https://img.shields.io/github/issues/aiden200/2D3MF?style=flat-square">
    </a>
    <a href="https://github.com/aiden200/2D3MF/blob/master/LICENSE">
        <img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-97ca00?style=flat-square">
    </a>
+    <a href="https://pytorch.org/">
+      <img src="https://img.shields.io/badge/PyTorch-%3E%3D1.8.0-EE4C2C?style=flat-square&logo=pytorch">
+    </a>
 
    <!-- <a href="https://arxiv.org/abs/2211.06627">
        <img src="https://img.shields.io/badge/arXiv-2211.06627-b31b1b.svg?style=flat-square">
    </a> -->
 </div>
 
-<div align="center">   
-   <a href="https://pytorch.org/">
-      <img src="https://img.shields.io/badge/PyTorch-%3E%3D1.8.0-EE4C2C?style=flat-square&logo=pytorch">
-    </a>
+<!-- <div align="center">    -->
 <!--    <a href="https://pypi.org/project/marlin-pytorch/">-->
 <!--        <img src="https://img.shields.io/pypi/v/marlin-pytorch?style=flat-square">-->
 <!--    </a>-->
@@ -32,7 +32,7 @@
 <!--        <img src="https://img.shields.io/pypi/dm/marlin-pytorch?style=flat-square">-->
 <!--    </a>-->
 <!--    <a href="https://www.python.org/"><img src="https://img.shields.io/pypi/pyversions/marlin-pytorch?style=flat-square"></a>-->
-</div>
+<!-- </div> -->
 
 <!--<div align="center">-->
 <!--    <a href="https://github.com/aiden200/2D3MF/actions"><img src="https://img.shields.io/github/actions/workflow/status/ControlNet/MARLIN/unittest.yaml?branch=dev&label=unittest&style=flat-square"></a>-->
