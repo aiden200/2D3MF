@@ -269,11 +269,13 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         x_v = x_v.permute(0, 2, 1)
         x_a = x_a.permute(0, 2, 1)
 
-        # print(x_v.shape, x_a.shape)
+        print(x_v.shape, x_a.shape)
 
         if not self.lf:
             x_v = self.video_model_cnn.forward_stage2(x_v)
             x_a = self.audio_model_cnn.forward_stage2(x_a)
+
+        print(x_v.shape, x_a.shape)
 
         video_pooled = x_v.mean([-1])  # mean accross temporal dimension
         audio_pooled = x_a.mean([-1])
