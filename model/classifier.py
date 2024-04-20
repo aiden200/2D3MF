@@ -52,7 +52,8 @@ class TD3MF(LightningModule):
                  hidden_layers: int = 128,
                  lp_only: bool = False,
                  audio_backbone: str = "MFCC",
-                 middle_fusion_type: str = "default"
+                 middle_fusion_type: str = "default",
+                 video_backbone: str = "marlin"
                  ):
         super().__init__()
         self.save_hyperparameters()
