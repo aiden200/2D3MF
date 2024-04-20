@@ -10,7 +10,7 @@ finetune: false
 ir_layers: "conv"
 num_heads: 2
 temporal_axis: 10
-fusion: "lf"
+fusion: "mf"
 audio_positional_encoding: True
 hidden_layers: 128
 lp_only: False

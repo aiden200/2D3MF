@@ -19,6 +19,16 @@ from speechbrain.inference.speaker import EncoderClassifier
 
 from eat_extract_audio_features import extract_features_eat
 
+def efficientface_video_extraction(video_save_path, video_model, video_path):
+    if os.path.exists(video_save_path): 
+        video_embeddings = np.load(video_save_path)
+    else:
+        #TODO
+        #video_embeddings = video_model.extract_video
+
+        np.save(video_save_path, video_embeddings.cpu().numpy())
+    
+    return video_embeddings
 
 def ff_check_real_audio_loaded(video_name, dataset_dir, feat_dir_audio):
     real_fake_token = video_name.split("-")[-1][0]
@@ -142,6 +152,8 @@ if __name__ == '__main__':
     
     assert os.path.exists(os.path.join(dataset_dir, "cropped")) and os.path.exists(os.path.join(dataset_dir, "audio")), "Missing dir cropped or audio"
 
+    marlin_configurations = ["marlin_vit_small_ytf", "marlin_vit_base_ytf", "marlin_vit_large_ytf"]
+
     # VIDEO BACKBONE
     # model = Marlin.from_online(args.backbone)
     if args.video_backbone == "marlin_vit_small_ytf":
@@ -153,10 +165,17 @@ if __name__ == '__main__':
     elif args.video_backbone == "marlin_vit_large_ytf":
         video_model = Marlin.from_file(
             "marlin_vit_large_ytf", "pretrained/marlin_vit_large_ytf.encoder.pt")
+    elif args.video_backbone == "efficientface":
+        video_model = None #TODO
     else:
         raise ValueError(f"Incorrect backbone {args.video_backbone}")
     
-    config = resolve_config(args.video_backbone)
+    if args.video_backbone in marlin_configurations:
+        config = resolve_config(args.video_backbone)
+        raw_video_path = os.path.join(dataset_dir, "cropped")
+    else:
+        raw_video_path = os.path.join(dataset_dir, args.video_backbone)
+
     feat_dir_video = args.video_backbone
 
     if torch.cuda.is_available():
@@ -183,7 +202,6 @@ if __name__ == '__main__':
     
     
     feat_dir_audio = args.audio_backbone
-    raw_video_path = os.path.join(dataset_dir, "cropped")
     raw_audio_path = os.path.join(dataset_dir, "audio")
 
     all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
@@ -219,7 +237,10 @@ if __name__ == '__main__':
             continue 
         try:
             # Video Feature Extraction
-            video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
+            if args.video_backbone in marlin_configurations:
+                video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
+            elif args.video_backbone == "efficientface":
+                video_embeddings = efficientface_video_extraction(video_save_path, video_model, video_path)
 
         except Exception as e:
             print(f"Video {video_path} error.", e)

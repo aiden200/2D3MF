@@ -78,12 +78,16 @@ class TD3MF(LightningModule):
         if fusion == "lf":
             self.lf = True
 
+
+        if video_backbone == "efficientface":
+            config.encoder_embed_dim = 0 # TODO fix this
+
+
         if audio_backbone == "MFCC":
             self.audio_hidden_layers = self.hidden_layers
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
             downsample = False
-
             self.eat_down = EatConvBlock(downsample) # brings (B, 512, 768) -> (B, 128, 768). Downsample brings it to (B, 10, 768)
         elif audio_backbone == "xvectors":
             self.audio_hidden_layers = 768
@@ -273,13 +277,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         x_v = x_v.permute(0, 2, 1)
         x_a = x_a.permute(0, 2, 1)
 
-        print(x_v.shape, x_a.shape)
+        # print(x_v.shape, x_a.shape)
 
         if not self.lf:
             x_v = self.video_model_cnn.forward_stage2(x_v)
             x_a = self.audio_model_cnn.forward_stage2(x_a)
 
-        print(x_v.shape, x_a.shape)
 
         video_pooled = x_v.mean([-1])  # mean accross temporal dimension
         audio_pooled = x_a.mean([-1])
