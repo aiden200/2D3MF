@@ -5,8 +5,8 @@ Parts of this code are based on https://github.com/zengqunzhao/EfficientFace/blo
 
 import torch
 import torch.nn as nn
-from src.efficientFace.modulator import Modulator
-from src.efficientFace.efficientface import LocalFeatureExtractor, InvertedResidual
+from efficientFace.modulator import Modulator
+from efficientFace.efficientface import LocalFeatureExtractor, InvertedResidual
 
 def conv1d_block(in_channels, out_channels, kernel_size=3, stride=1, padding='same'):
     return nn.Sequential(nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size,stride=stride, padding=padding),nn.BatchNorm1d(out_channels),
@@ -111,8 +111,6 @@ def init_feature_extractor(model, path):
 def get_model(num_classes, task, seq_length):
     model = EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024], num_classes, task, seq_length)
     return model  
-
-
 
 
 

@@ -10,8 +10,14 @@ from tqdm.auto import tqdm
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
+from efficientFace.load_model import EfficientFaceTemporal, init_feature_extractor
 from audio_resnet.audio_resnet18 import AudioResNet18
 from emotion2vec.emotion2vec import Emotion2vec
+from PIL import Image
+import functools
+
+
+
 
 
 # Used to get speech xvector embeddings
@@ -19,12 +25,22 @@ from speechbrain.inference.speaker import EncoderClassifier
 
 from eat_extract_audio_features import extract_features_eat
 
+def efficientFace_video_loader(video_dir_path):
+    video = np.load(video_dir_path)    
+    video_data = []
+    for i in range(np.shape(video)[0]):
+        video_data.append(Image.fromarray(video[i,:,:,:]))
+    video_data = torch.stack(video_data, 0).permute(1, 0, 2, 3)  
+    
+    return video_data
+
+
 def efficientface_video_extraction(video_save_path, video_model, video_path):
     if os.path.exists(video_save_path): 
         video_embeddings = np.load(video_save_path)
     else:
-        #TODO
-        #video_embeddings = video_model.extract_video
+        clip = efficientFace_video_loader(video_path)
+        video_embeddings = video_model.forward_features(clip)
 
         np.save(video_save_path, video_embeddings.cpu().numpy())
     
@@ -57,8 +73,6 @@ def marlin_video_extraction(save_path, video_model, video_path, config):
     return video_embeddings
 
 def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
-
-
     if not os.path.exists(os.path.join(dataset_dir, "eat", audio_name + ".npy")):
         print(os.path.join(dataset_dir, "eat", audio_name + ".npy"))
         audio_save_path = os.path.join(dataset_dir, "eat")
@@ -68,6 +82,9 @@ def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
     
             return video_name[:-4]
     return 0
+
+
+
 
 
 def delete_corrupted_files(filepath, corrupted_files):
@@ -166,15 +183,16 @@ if __name__ == '__main__':
         video_model = Marlin.from_file(
             "marlin_vit_large_ytf", "pretrained/marlin_vit_large_ytf.encoder.pt")
     elif args.video_backbone == "efficientface":
-        video_model = None #TODO
+        assert os.path.exists("pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar"), "Missing EfficientFace pretrained model!"
+        video_model = EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024], num_classes=1, im_per_sample=10)
+        init_feature_extractor(video_model, "pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar")
     else:
         raise ValueError(f"Incorrect backbone {args.video_backbone}")
     
     if args.video_backbone in marlin_configurations:
         config = resolve_config(args.video_backbone)
-        raw_video_path = os.path.join(dataset_dir, "cropped")
-    else:
-        raw_video_path = os.path.join(dataset_dir, args.video_backbone)
+    raw_video_path = os.path.join(dataset_dir, "cropped")
+
 
     feat_dir_video = args.video_backbone
 
@@ -192,7 +210,6 @@ if __name__ == '__main__':
         audio_model = AudioResNet18()
         audio_resnet_model_path = "pretrained/RAVDESS_bs_32_lr_0.001_ep_250_03-30-22-28-29.pth"
         audio_model.load_state_dict(torch.load(audio_resnet_model_path))
-        #TODO: Make sure to integrate this logic with the below resnet todo block
     elif args.audio_backbone == "emotion2vec":
         audio_model = Emotion2vec()
     elif args.audio_backbone == "eat":
