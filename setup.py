@@ -1,5 +1,13 @@
 import init
 import setuptools
+from setuptools import setup, find_packages
+
+
+model_packages = [f"model.{pkg}" for pkg in find_packages(where='model')]
+src_packages = [f"src.{pkg}" for pkg in find_packages(where='src')]
+# packages=setuptools.find_packages(where="src", include=["marlin_pytorch", "marlin_pytorch.*", "fairseq"]),
+all_packages = model_packages + src_packages
+
 
 with open("README.md", "r", encoding="UTF-8") as file:
     long_description = file.read()
@@ -13,22 +21,21 @@ with open("requirements.lib.txt", "r", encoding="UTF-8") as file:
 version = init.read_version()
 init.write_version(version)
 
-setuptools.setup(
-    name="marlin_pytorch",
+setup(
+    name="2D3MF",
     version=version,
-    author="ControlNet",
-    author_email="smczx@hotmail.com",
-    description="Official pytorch implementation for MARLIN.",
+    author="aiden200",
+    author_email="aidenchang@gmail.com",
+    description="Official pytorch implementation for 2D3MF",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/ControlNet/MARLIN",
+    url="https://github.com/aiden200/2D3MF",
     project_urls={
-        "Bug Tracker": "https://github.com/ControlNet/MARLIN/issues",
-        "Source Code": "https://github.com/ControlNet/MARLIN",
+        "Bug Tracker": "https://github.com/aiden200/2D3MF/issues",
+        "Source Code": "https://github.com/aiden200/2D3MF",
     },
-    keywords=["deep learning", "pytorch", "AI"],
-    package_dir={"": "src"},
-    packages=setuptools.find_packages(where="src", include=["marlin_pytorch", "marlin_pytorch.*"]),
+    keywords=["Audio", "pytorch", "AI", "machine-learning", "video", "deep-learning", "multi-modal", "deepfake-detection"],
+    packages=all_packages,
     package_data={
         "marlin_pytorch": [
             "version.txt"
