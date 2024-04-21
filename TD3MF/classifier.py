@@ -12,6 +12,7 @@ from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
 from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
+from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model
 from moviepy.editor import VideoFileClip
 import os
 
@@ -71,6 +72,8 @@ class TD3MF(LightningModule):
 
         config = resolve_config(backbone)
 
+        self.marlin_backbone = backbone
+        self.video_backbone = video_backbone
         self.temporal_axis = temporal_axis
         self.hidden_layers = hidden_layers
         self.audio_backbone = audio_backbone
@@ -318,10 +321,14 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         clip.close()
 
         
-
         # run through pretrained models
-        x_v = forward_video_model(x_v)
-        x_a = forward_audio_model(x_a)
+        if "marlin" in self.video_backbone:
+            video_model = self.marlin_backbone
+        else:
+            video_model = self.video_backbone
+        x_v = forward_video_model(video_output_path, video_model)
+
+        x_a = forward_audio_model(x_a, self.audio_backbone)
 
         # run through pretrained weights
         out = self._extract(x_v, x_a)
