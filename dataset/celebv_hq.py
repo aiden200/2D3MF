@@ -231,7 +231,8 @@ class LPFeaturesDataset(BaseDataSetLoader):
         take_num: Optional[int] = None,
         temporal_axis: int = 14,
         audio_feature: str = "MFCC",
-        modality_dropout: float = 0.0
+        modality_dropout: float = 0.0,
+        video_backbone: str = 'marlin'
     ):
         super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
         self.split = split
@@ -240,14 +241,17 @@ class LPFeaturesDataset(BaseDataSetLoader):
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
         self.modality_dropout = modality_dropout
+        self.video_backbone = video_backbone
 
     def __getitem__(self, index: int):
-        feat_path = os.path.join(self.name_list[index][0], self.feature_dir, self.name_list[index][1] + ".npy")
+        if self.video_backbone == 'marlin':
+            feat_path = os.path.join(self.name_list[index][0], self.feature_dir, self.name_list[index][1] + ".npy")
+        else:
+            feat_path = os.path.join(self.name_list[index][0], self.video_backbone, self.name_list[index][1] + ".npy")
 
         audio_feature_dir = self.audio_feature
         audio_path = os.path.join(self.name_list[index][0], audio_feature_dir, self.name_list[index][1] + ".npy")
         
-
         x_v = torch.from_numpy(np.load(feat_path)).float()
         x_a = torch.from_numpy(np.load(audio_path))
 
@@ -336,7 +340,8 @@ class DataModule(LightningDataModule):
         audio_feature: str = "MFCC",
         training_datasets: list = [],
         eval_datasets: list = [],
-        modality_dropout: float = 0.0
+        modality_dropout: float = 0.0,
+        video_backbone: str = "marlin"
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -355,6 +360,7 @@ class DataModule(LightningDataModule):
         self.temporal_axis = temporal_axis
         self.audio_feature = audio_feature
         self.modality_dropout = modality_dropout
+        self.video_backbone = video_backbone
 
         if load_raw:
             assert clip_frames is not None
@@ -380,11 +386,14 @@ class DataModule(LightningDataModule):
                 self.temporal_sample_rate, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature)
         else:
             self.train_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"train_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, modality_dropout=self.modality_dropout)
+                self.temporal_reduction, self.data_ratio, self.take_train, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, 
+                modality_dropout=self.modality_dropout, video_backbone=self.video_backbone)
             self.val_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"val_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature,modality_dropout=0)
+                self.temporal_reduction, self.data_ratio, self.take_val, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, 
+                modality_dropout=0, video_backbone=self.video_backbone)
             self.test_dataset = LPFeaturesDataset(self.root_dir, self.feature_dir, f"test_{self.audio_feature}", self.training_datasets, self.eval_datasets, self.task,
-                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, modality_dropout=0)
+                self.temporal_reduction, 1.0, self.take_test, temporal_axis=self.temporal_axis,audio_feature=self.audio_feature, 
+                modality_dropout=0, video_backbone=self.video_backbone)
 
     def train_dataloader(self):
         return DataLoader(

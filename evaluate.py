@@ -41,6 +41,9 @@ def train(args, config):
     middle_fusion_type = config['middle_fusion_type']
     training_datasets = config['training_datasets']
     eval_datasets = config['eval_datasets']
+
+    video_backbone = config.get('video_backbone', 'marlin')
+
     if 'modality_dropout' in config:
         modality_dropout = config['modality_dropout']
     else:
@@ -91,7 +94,8 @@ def train(args, config):
             None, "binary", learning_rate, args.n_gpus > 1,
             ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
-            lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type
+            lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type,
+            video_backbone=video_backbone
         )
 
         dm = DataModule(
@@ -103,7 +107,8 @@ def train(args, config):
             temporal_axis=temporal_axis,
             audio_feature=audio_backbone,
             training_datasets=training_datasets,
-            eval_datasets=eval_datasets, modality_dropout=modality_dropout
+            eval_datasets=eval_datasets, modality_dropout=modality_dropout,
+            video_backbone=video_backbone
         )
 
     if args.skip_train:

@@ -17,4 +17,5 @@ lp_only: False
 audio_backbone: "eat" # MFCC, eat, xvectors, resnet, emotion2vec
 middle_fusion_type: "self_cross_attention" # default, audio_refuse, video_refuse, self_attention, multi_attention, self_cross_attention
 modality_dropout: 0.0
+video_backbone: 'efficientface' # marlin, efficientface
 
