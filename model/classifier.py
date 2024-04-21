@@ -80,7 +80,7 @@ class TD3MF(LightningModule):
 
 
         if video_backbone == "efficientface":
-            config.encoder_embed_dim = 0 # TODO fix this
+            config.encoder_embed_dim = 1024 
 
 
         if audio_backbone == "MFCC":

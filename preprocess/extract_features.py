@@ -14,10 +14,7 @@ from efficientFace.load_model import EfficientFaceTemporal, init_feature_extract
 from audio_resnet.audio_resnet18 import AudioResNet18
 from emotion2vec.emotion2vec import Emotion2vec
 from PIL import Image
-import functools
-
-
-
+import cv2
 
 
 # Used to get speech xvector embeddings
@@ -26,12 +23,31 @@ from speechbrain.inference.speaker import EncoderClassifier
 from eat_extract_audio_features import extract_features_eat
 
 def efficientFace_video_loader(video_dir_path):
-    video = np.load(video_dir_path)    
-    video_data = []
-    for i in range(np.shape(video)[0]):
-        video_data.append(Image.fromarray(video[i,:,:,:]))
-    video_data = torch.stack(video_data, 0).permute(1, 0, 2, 3)  
-    
+    cap = cv2.VideoCapture(video_dir_path)
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        exit()
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    num_frames_to_read = int(fps * 10) # 10 seconds
+    frames = []
+    for _ in range(num_frames_to_read):
+        ret, frame = cap.read()
+        if not ret:
+            break 
+        frames.append(frame)
+
+    if len(frames) < num_frames_to_read:
+        num_frames_to_pad = num_frames_to_read - len(frames)
+        # Pad with 0s
+        if frames:
+            height, width, channels = frames[0].shape
+            padding = np.zeros((num_frames_to_pad, height, width, channels), dtype=np.uint8)
+            frames.extend(padding)
+
+    video_data = torch.asarray(frames).permute(0, 3, 1, 2)
+    cap.release()    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    video_data = video_data.float().to(device)
     return video_data
 
 
@@ -41,8 +57,7 @@ def efficientface_video_extraction(video_save_path, video_model, video_path):
     else:
         clip = efficientFace_video_loader(video_path)
         video_embeddings = video_model.forward_features(clip)
-
-        np.save(video_save_path, video_embeddings.cpu().numpy())
+        np.save(video_save_path, video_embeddings.detach().cpu().numpy())
     
     return video_embeddings
 
@@ -252,17 +267,17 @@ if __name__ == '__main__':
         if not all(os.path.exists(path) for path in [video_path, audio_path]):
             print(f"File {video_path} or {audio_path} does not exist!")
             continue 
-        try:
+        # try:
             # Video Feature Extraction
-            if args.video_backbone in marlin_configurations:
-                video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
-            elif args.video_backbone == "efficientface":
-                video_embeddings = efficientface_video_extraction(video_save_path, video_model, video_path)
+        if args.video_backbone in marlin_configurations:
+            video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
+        elif args.video_backbone == "efficientface":
+            video_embeddings = efficientface_video_extraction(video_save_path, video_model, video_path)
 
-        except Exception as e:
-            print(f"Video {video_path} error.", e)
-            corrupted_files.append(video_name[:-4])
-            continue
+        # except Exception as e:
+        #     print(f"Video {video_path} error.", e)
+        #     corrupted_files.append(video_name[:-4])
+        #     continue
         try:
             # Audio Feature Extraction
             dup = False
