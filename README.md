@@ -250,6 +250,12 @@ NEED A GENERAL PIPELINE
 
 </details>
 
+<details>
+  <summary>EfficientFace</summary>
+
+Download the pre-trained EfficientFace from [here](https://github.com/zengqunzhao/EfficientFace) under 'Pre-trained models'. In our experiments, we use the model pre-trained on AffectNet7, i.e., EfficientFace_Trained_on_AffectNet7.pth.tar. Please place it under the `pretrained` directory
+</details>
+
 <!-- <details>
   <summary>Forensics++</summary>
 Please make sure the forensices++ dir is set up as the following from step 1.
@@ -308,7 +314,7 @@ python evaluate.py \
     --batch_size 8 \
     --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
 
-python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path ../2D3MF_Datasets --num_workers 4     --batch_size 256 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300
+python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path 2D3MF_Datasets --num_workers 4     --batch_size 1 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300
 
 
 
