@@ -12,6 +12,9 @@ from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
 from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
+from moviepy.editor import VideoFileClip
+import os
+
 
 import torch.nn as nn
 import time
@@ -214,6 +217,13 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_v = x_v.reshape(
                 (x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
 
+        x = self._extract(x_v, x_a)
+
+        x1 = self.classifier_1(x)
+
+        return x1.sigmoid()
+    
+    def _extract(self, x_v, x_a):
         if self.lp_only:  # only linear probing
             return self.lp_only_fc(x_v)
 
@@ -288,9 +298,34 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         audio_pooled = x_a.mean([-1])
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
-        x1 = self.classifier_1(x)
+        return x
 
-        return x1.sigmoid()
+    
+    def feature_extraction(self, file_path):
+        if not os.path.exists("temp"):
+            os.mkdir("temp")
+        audio_output_path = os.path.join("temp", "audio_clip")
+        video_output_path = os.path.join("temp", "video_clip")
+
+        clip = VideoFileClip(file_path)
+        audio = clip.audio
+        audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
+        video = clip.without_audio()
+        video.write_videofile(video_output_path, codec='libx264')  # Saving the video as MP4
+
+        audio.close()
+        video.close()
+        clip.close()
+
+        
+
+        # run through pretrained models
+        x_v = forward_video_model(x_v)
+        x_a = forward_audio_model(x_a)
+
+        # run through pretrained weights
+        out = self._extract(x_v, x_a)
+        return out
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch  # video frames, label, audio mfccs

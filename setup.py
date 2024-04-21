@@ -3,10 +3,10 @@ import setuptools
 from setuptools import setup, find_packages
 
 
-model_packages = [f"model.{pkg}" for pkg in find_packages(where='model')]
+TD3MF_packages = [f"TD3MF.{pkg}" for pkg in find_packages(where='TD3MF')]
 src_packages = [f"src.{pkg}" for pkg in find_packages(where='src')]
 # packages=setuptools.find_packages(where="src", include=["marlin_pytorch", "marlin_pytorch.*", "fairseq"]),
-all_packages = model_packages + src_packages
+all_packages = TD3MF_packages + src_packages
 
 
 with open("README.md", "r", encoding="UTF-8") as file:
