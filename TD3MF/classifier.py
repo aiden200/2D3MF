@@ -10,8 +10,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
-from model.transformer_blocks import AttentionBlock, PositionalEncoding
-from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
+from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
+from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
 
 import torch.nn as nn
 import time

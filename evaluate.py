@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 from dataset.celebv_hq import DataModule
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
-from model.classifier import TD3MF
+from TD3MF.classifier import TD3MF
 from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
