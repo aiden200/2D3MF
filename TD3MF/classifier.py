@@ -315,7 +315,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
         video = clip.without_audio()
         video.write_videofile(video_output_path, codec='libx264')  # Saving the video as MP4
-
+        # cut it down to 10 seconds
         audio.close()
         video.close()
         clip.close()
@@ -327,8 +327,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         else:
             video_model = self.video_backbone
         x_v = forward_video_model(video_output_path, video_model)
-
-        x_a = forward_audio_model(x_a, self.audio_backbone)
+        x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
 
         # run through pretrained weights
         out = self._extract(x_v, x_a)
