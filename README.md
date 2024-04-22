@@ -76,10 +76,7 @@ This repo is the implementation for the paper
 ```
 
 ## Installing and running our model
-
-## Paper Implementation
-
-## Feature Extraction - 2D3MF
+### Feature Extraction - 2D3MF
 
 Install 2D3MF from pypi
 
@@ -98,6 +95,8 @@ features = model.feature_extraction("2D3MF_Datasets/test/SampleVideo_1280x720_1m
 
 <!-- TODO -->
 We have some pretrained marlin checkpoints and configurations [here]()
+
+## Paper Implementation
 
 Requirements:
 
