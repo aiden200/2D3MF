@@ -98,13 +98,12 @@ class EfficientFaceTemporal(nn.Module):
         
       
 
-def init_feature_extractor(model, path):
+def init_feature_extractor(model, path, device="cpu"):
     if path == 'None' or path is None:
         return
-    checkpoint = torch.load(path, map_location=torch.device('cpu'))
+    checkpoint = torch.load(path, map_location=torch.device(device))
     pre_trained_dict = checkpoint['state_dict']
     pre_trained_dict = {key.replace("module.", ""): value for key, value in pre_trained_dict.items()}
-    print('Initializing efficientnet')
     model.load_state_dict(pre_trained_dict, strict=False)
 
     

@@ -21,7 +21,7 @@ import cv2
 from speechbrain.inference.speaker import EncoderClassifier
 
 from preprocess.eat_extract_audio_features import eat_extract_inference
-from preprocess.extract_features import efficientFace_video_loader, get_eat, extract_audio, extract_audio_xvectors, extract_audio_resnet
+from preprocess.extract_features import efficientFace_video_loader, extract_audio, extract_audio_xvectors, extract_audio_resnet
 
 
 
@@ -29,8 +29,10 @@ from preprocess.extract_features import efficientFace_video_loader, get_eat, ext
 def efficientface_extraction(video_path):
     assert os.path.exists("pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar"), "Missing EfficientFace pretrained model!"
     video_model = EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024], num_classes=1, im_per_sample=10)
-    init_feature_extractor(video_model, "pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    init_feature_extractor(video_model, "pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar", device=device)
     video_data = efficientFace_video_loader(video_path)
+    print(video_data.device)
     video_embeddings = video_model.forward_features(video_data)
     return video_embeddings.detach()
 
@@ -48,7 +50,7 @@ def marlin_extraction(video_path, marlin_model):
         raise ValueError("Wrong MARLIN model!")
     config = resolve_config(marlin_model)
     video_embeddings = video_model.extract_video(
-            video_path, crop_face=False,
+            video_path, crop_face=True,
             sample_rate=config.tubelet_size, stride=config.n_frames,
             keep_seq=False)
     return video_embeddings

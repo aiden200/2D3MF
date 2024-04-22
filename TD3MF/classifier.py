@@ -307,8 +307,8 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
     def feature_extraction(self, file_path):
         if not os.path.exists("temp"):
             os.mkdir("temp")
-        audio_output_path = os.path.join("temp", "audio_clip")
-        video_output_path = os.path.join("temp", "video_clip")
+        audio_output_path = os.path.join("temp", "audio_clip.wav")
+        video_output_path = os.path.join("temp", "video_clip.mp4")
 
         clip = VideoFileClip(file_path)
         audio = clip.audio
@@ -320,17 +320,17 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         video.close()
         clip.close()
 
-        
         # run through pretrained models
         if "marlin" in self.video_backbone:
             video_model = self.marlin_backbone
         else:
             video_model = self.video_backbone
-        x_v = forward_video_model(video_output_path, video_model)
-        x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
-
-        # run through pretrained weights
-        out = self._extract(x_v, x_a)
+        with torch.no_grad():
+            x_v = forward_video_model(video_output_path, video_model)
+            x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
+            # run through pretrained weights
+            out = self._extract(x_v, x_a)
+            
         return out
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
