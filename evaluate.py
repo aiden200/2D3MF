@@ -118,6 +118,8 @@ def train(args, config):
     strategy = None if n_gpus <= 1 else "ddp"
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
+    config["model_name"] = f"{video_backbone}_{audio_backbone}_{middle_fusion_type}"
+
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
     ckpt_monitor = "val_auc"
 

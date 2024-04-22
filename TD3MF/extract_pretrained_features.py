@@ -29,10 +29,12 @@ from preprocess.extract_features import efficientFace_video_loader, extract_audi
 def efficientface_extraction(video_path):
     assert os.path.exists("pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar"), "Missing EfficientFace pretrained model!"
     video_model = EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024], num_classes=1, im_per_sample=10)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # print(device)
     init_feature_extractor(video_model, "pretrained/EfficientFace_Trained_on_AffectNet7.pth.tar", device=device)
-    video_data = efficientFace_video_loader(video_path)
-    print(video_data.device)
+    video_data = efficientFace_video_loader(video_path, device=device)
+    # print(video_data.device)
+    # print(video_data.shape)
     video_embeddings = video_model.forward_features(video_data)
     return video_embeddings.detach()
 

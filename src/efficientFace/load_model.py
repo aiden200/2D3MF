@@ -61,7 +61,14 @@ class EfficientFaceTemporal(nn.Module):
     def forward_features(self, x):
         x = self.conv1(x)
         x = self.maxpool(x)
-        x = self.modulator(self.stage2(x)) + self.local(x)
+        out_stage2 = self.stage2(x)
+        modulated = self.modulator(out_stage2)
+        local_out = self.local(x)
+
+        print("Stage2 Output:", out_stage2.shape)
+        print("Modulated Output:", modulated.shape)
+        print("Local Output:", local_out.shape)
+        x = modulated + local_out  
         x = self.stage3(x)
         x = self.stage4(x)
         x = self.conv5(x)
@@ -105,6 +112,7 @@ def init_feature_extractor(model, path, device="cpu"):
     pre_trained_dict = checkpoint['state_dict']
     pre_trained_dict = {key.replace("module.", ""): value for key, value in pre_trained_dict.items()}
     model.load_state_dict(pre_trained_dict, strict=False)
+    model.to(device)
 
     
 def get_model(num_classes, task, seq_length):

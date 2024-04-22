@@ -54,7 +54,7 @@ def efficientface_video_extraction(video_save_path, video_model, video_path):
     if os.path.exists(video_save_path): 
         video_embeddings = np.load(video_save_path)
     else:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         clip = efficientFace_video_loader(video_path, device)
         video_embeddings = video_model.forward_features(clip)
         np.save(video_save_path, video_embeddings.detach().cpu().numpy())
