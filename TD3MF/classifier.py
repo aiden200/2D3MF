@@ -10,8 +10,12 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
-from model.transformer_blocks import AttentionBlock, PositionalEncoding
-from model.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
+from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
+from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
+from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model
+from moviepy.editor import VideoFileClip
+import os
+
 
 import torch.nn as nn
 import time
@@ -68,6 +72,8 @@ class TD3MF(LightningModule):
 
         config = resolve_config(backbone)
 
+        self.marlin_backbone = backbone
+        self.video_backbone = video_backbone
         self.temporal_axis = temporal_axis
         self.hidden_layers = hidden_layers
         self.audio_backbone = audio_backbone
@@ -214,6 +220,13 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             x_v = x_v.reshape(
                 (x_v.shape[0]//self.temporal_axis, self.temporal_axis, x_v.shape[-1]))
 
+        x = self._extract(x_v, x_a)
+
+        x1 = self.classifier_1(x)
+
+        return x1.sigmoid()
+    
+    def _extract(self, x_v, x_a):
         if self.lp_only:  # only linear probing
             return self.lp_only_fc(x_v)
 
@@ -288,9 +301,37 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         audio_pooled = x_a.mean([-1])
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
-        x1 = self.classifier_1(x)
+        return x
 
-        return x1.sigmoid()
+    
+    def feature_extraction(self, file_path):
+        if not os.path.exists("temp"):
+            os.mkdir("temp")
+        audio_output_path = os.path.join("temp", "audio_clip.wav")
+        video_output_path = os.path.join("temp", "video_clip.mp4")
+
+        clip = VideoFileClip(file_path)
+        audio = clip.audio
+        audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
+        video = clip.without_audio()
+        video.write_videofile(video_output_path, audio=False, codec='libx264')  # Saving the video as MP4
+        # cut it down to 10 seconds
+        audio.close()
+        video.close()
+        clip.close()
+
+        # run through pretrained models
+        if "marlin" in self.video_backbone:
+            video_model = self.marlin_backbone
+        else:
+            video_model = self.video_backbone
+        with torch.no_grad():
+            x_v = forward_video_model(video_output_path, video_model)
+            x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
+            # run through pretrained weights
+            out = self._extract(x_v, x_a)
+            
+        return out
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch  # video frames, label, audio mfccs

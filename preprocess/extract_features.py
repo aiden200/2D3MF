@@ -20,9 +20,9 @@ import cv2
 # Used to get speech xvector embeddings
 from speechbrain.inference.speaker import EncoderClassifier
 
-from eat_extract_audio_features import extract_features_eat
+from preprocess.eat_extract_audio_features import extract_features_eat
 
-def efficientFace_video_loader(video_dir_path):
+def efficientFace_video_loader(video_dir_path, device="cpu"):
     cap = cv2.VideoCapture(video_dir_path)
     if not cap.isOpened():
         print("Error: Could not open video.")
@@ -46,7 +46,6 @@ def efficientFace_video_loader(video_dir_path):
 
     video_data = torch.asarray(frames).permute(0, 3, 1, 2)
     cap.release()    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     video_data = video_data.float().to(device)
     return video_data
 
@@ -55,7 +54,8 @@ def efficientface_video_extraction(video_save_path, video_model, video_path):
     if os.path.exists(video_save_path): 
         video_embeddings = np.load(video_save_path)
     else:
-        clip = efficientFace_video_loader(video_path)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        clip = efficientFace_video_loader(video_path, device)
         video_embeddings = video_model.forward_features(clip)
         np.save(video_save_path, video_embeddings.detach().cpu().numpy())
     

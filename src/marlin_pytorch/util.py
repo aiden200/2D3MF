@@ -9,6 +9,8 @@ from numpy import ndarray
 from torch import Tensor
 from torch.nn import functional as F
 from tqdm.auto import tqdm
+import librosa
+from scipy.signal import resample
 
 
 def read_video(path: str, channel_first: bool = True):
@@ -111,9 +113,6 @@ class NoArgInit:
     def __init__(self):
         pass
 
-
-import librosa
-from scipy.signal import resample
 
 def get_mfccs(y, sr=44100):
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=10)

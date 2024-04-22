@@ -161,6 +161,56 @@ def extract_features_eat(source_dir, target_dir, filename, new_filename = None, 
         return -1
     return 0
 
+def eat_extract_inference(raw_audio_path, target_file, granularity="frame", target_length=1024, checkpoint_dir="pretrained/audio/EAT_pretrained_AS2M.pt"):
+
+    
+    stereo_audio = AudioSegment.from_wav(raw_audio_path)
+    if stereo_audio.channels > 1:
+        mono_audio = stereo_audio.set_channels(1)
+        mono_audio.export(raw_audio_path, format="wav")
+
+    if target_length == 1024:
+        duration = 10000 # 10 seconds
+    elif target_length == 512:
+        duration = 5000 # 5 seconds
+    else:
+        raise ValueError("Wrong target length. Has to be 1024(10seconds) or 512(5) seconds.")
+    
+    audio = AudioSegment.from_file(raw_audio_path)
+
+    if len(audio) > duration:
+        trimmed_audio = audio[:duration]
+        trimmed_audio.export(raw_audio_path, format="wav")
+    elif len(audio) < duration:
+        silence_duration = duration - len(audio)
+        silence = AudioSegment.silent(duration=silence_duration)
+        padded_audio = audio + silence
+        padded_audio.export(raw_audio_path, format="wav")
+    
+    audio = None
+
+    
+    cmd = f"""
+    cd src/fairseq && python EAT/feature_extract/feature_extract.py \
+        --source_file='../../{raw_audio_path}' \
+        --target_file='../../{target_file}' \
+        --model_dir='EAT' \
+        --checkpoint_dir='../../{checkpoint_dir}' \
+        --granularity='{granularity}' \
+        --target_length={target_length} \
+        --norm_mean=-4.268 \
+        --norm_std=4.569
+    """
+    # print(cmd)
+
+
+    # Execute the command
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if result.returncode != 0 or not os.path.exists(target_file) or "Successfully saved" not in result.stdout:
+        print(f"Error processing {raw_audio_path}: {result.stderr}")
+        return -1
+    return 0
+
 
 
 def get_parser():

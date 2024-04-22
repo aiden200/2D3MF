@@ -65,7 +65,7 @@ This repo is the implementation for the paper
 
 # below is for the paper implementation
 ├── configs              # Configs for experiments settings
-├── model                # 2D3MF & Marlin models
+├── TD3MF                # 2D3MF model code
 ├── preprocess           # Preprocessing scripts
 ├── dataset              # Dataloaders
 ├── utils                # Utility functions
@@ -79,7 +79,25 @@ This repo is the implementation for the paper
 
 ## Paper Implementation
 
-## Feature Extraction - MARLIN
+## Feature Extraction - 2D3MF
+
+Install 2D3MF from pypi
+
+```bash
+pip install 2D3MF
+```
+
+Sample code snippet for feature extraction
+
+``` python
+from TD3MF.classifier import TD3MF
+ckpt = "ckpt/celebvhq_marlin_deepfake_ft/last-v72.ckpt"
+model = TD3MF.load_from_checkpoint(ckpt)
+features = model.feature_extraction("2D3MF_Datasets/test/SampleVideo_1280x720_1mb.mp4")
+```
+
+<!-- TODO -->
+We have some pretrained marlin checkpoints and configurations [here]()
 
 Requirements:
 
@@ -88,13 +106,7 @@ Requirements:
 - Torchvision ~= 0.12
 - ffmpeg
 
-Install MARLIN (our feature extractor) from PyPI:
 
-```bash
-pip install marlin-pytorch
-```
-
-For more details, see [MODEL_ZOO.md](MODEL_ZOO.md).
 
 ## Installation
 
@@ -105,7 +117,7 @@ Clone the repo and install the requirements:
 ```bash
 git clone https://github.com/aiden200/2D3MF
 cd 2D3MF
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Training
@@ -222,33 +234,8 @@ Run:
 python3 preprocess/preprocess_clips.py --data_dir [Dataset_Dir]
 ```
 
-<!-- <details>
-  <summary>Forensics++</summary>
-
-Please make sure the forensices++ dir is set up as the following from step 1.
-
-```bash
--- Parent_dir
-|-- manipulated_sequences
-|-- original_sequences
-|-- downloaded_videos_info
-|-- audio_clips
-```
-
-Run:
-```bash
-python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
-```
-</details> -->
-
 ### 3. Extract features from pretrained models
 
-NEED A GENERAL PIPELINE
-
-<details>
-  <summary>General Extraction</summary>
-
-</details>
 
 <details>
   <summary>EfficientFace</summary>
@@ -256,41 +243,39 @@ NEED A GENERAL PIPELINE
 Download the pre-trained EfficientFace from [here](https://github.com/zengqunzhao/EfficientFace) under 'Pre-trained models'. In our experiments, we use the model pre-trained on AffectNet7, i.e., EfficientFace_Trained_on_AffectNet7.pth.tar. Please place it under the `pretrained` directory
 </details>
 
-<!-- <details>
-  <summary>Forensics++</summary>
-Please make sure the forensices++ dir is set up as the following from step 1.
-
-```bash
--- Parent_dir
-|-- manipulated_sequences
-|-- original_sequences
-|-- downloaded_videos_info
-|-- audio_clips
-```
 
 Run:
 
 ```bash
-python3 preprocess/faceforensics_scripts/faceforensics_preprocess.py --data_dir [Parent_dir] --test .1 --val .1
+python preprocess/extract_features.py --data_dir /path/to/data --video_backbone [VIDEO_BACKBONE] --audio_backbone [AUDIO_BACKBONE]
 ```
 
-</details> -->
+[VIDEO_BACKBONE] can be replaced with one of the following: 
+- marlin_vit_small_ytf
+- marlin_vit_base_ytf
+- marlin_vit_large_ytf
+- efficientface
 
-Run:
+[AUDIO_BACKBONE] can be replaced with one of the following:
+- MFCC
+- xvectors
+- resnet
+- emotion2vec
+- eat
 
-```bash
-python preprocess/extract_features.py --data_dir /path/to/data --video_backbone marlin_vit_small_ytf --audio_backbone eat
-```
 
 Optionally add the `--Forensics` flag in the end if Forensics++ is the dataset being processed.
+
+From our paper, we found that `eat` works the best as the audio backbone. 
 
 Split the train val and test sets.
 Run:
 
 ```bash
-python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_FEATURE_EXTRACOTR]
+python preprocess/gen_split.py --data_dir /path/to/data --test 0.1 --val 0.1 --feat_type [AUDIO_BACKBONE]
 ```
 
+<!-- TODO add the rest -->
 Note that the pre-trained `video_backbone` and `audio_backbone` can be downloaded from [MODEL_ZOO.md](MODEL_ZOO.md)
 
 ### 4. Train and evaluate
@@ -308,39 +293,49 @@ python evaluate.py \
 
 
 python evaluate.py \
-    --config config/celebv_hq/appearance/celebvhq_marlin_deepfake_ft.yaml \
-    --data_path new_yt_sequences \
+    --config /path/to/config  \
+    --data_path /path/to/dataset \
     --num_workers 4 \
     --batch_size 8 \
-    --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt
+    --marlin_ckpt pretrained/marlin_vit_base_ytf.encoder.pt \
+    --epochs 300
+
 
 python evaluate.py --config config/celebvhq_marlin_deepfake_ft.yaml --data_path 2D3MF_Datasets --num_workers 4     --batch_size 1 --marlin_ckpt pretrained/marlin_vit_small_ytf.encoder.pt --epochs 300
-
-
-
---skip_train --resume ckpt/celebvhq_marlin_deepfake_ft/celebvhq_marlin_deepfake_ft-epoch=121-val_auc=0.587.ckpt
-
 ```
 
-### 5. Hyperparameters Search
+Optionally, add 
+```bash
+--skip_train --resume /path/to/checkpoint
+```
 
-- model
-- fusion
-- lr
-- attention heads
-- hidden dimension
-- batch size
-- epoch
-- audio positional encoding
+To skip the training.
+
+### 5. Configuration File
+
+Set a configuration file based on your hyperparameters and backbones. You can find a example config file under `config/`
+
+Explanation:
+- `training_datasets` - list, can contain one or more datasets within `"DeepfakeTIMIT"`, `"RAVDESS"`, `"Forensics++"`, `"DFDC"`, `"FakeAVCeleb"`
+- `eval_datasets`- list, can contain one or more datasets within `"DeepfakeTIMIT"`, `"RAVDESS"`, `"Forensics++"`, `"DFDC"`, `"FakeAVCeleb"`
+- `learning_rate` - int, ex: `1.00e-3`
+- `num_heads` - int, Number of attention heads
+- `fusion` - str, Choice of fusion type: `"mf"` for middle fusion and `"lf"` for late fusion.
+- `audio_positional_encoding` - bool, add audio positional encoding
+- `hidden_layers` - int, hidden layers
+- `lp_only` - bool, setting this to be true will perform inference from the video features only
+- `audio_backbone`- str, select one of the following options: `"MFCC"`, `"eat"`, `"xvectors"`, `"resnet"`, `"emotion2vec"`
+- `middle_fusion_type`- str, select one of the following options: `"default"`, `"audio_refuse"`, `"video_refuse"`, `"self_attention"`, `"self_cross_attention"`
+- `modality_dropout` - float, modality dropout rate
+- `video_backbone` - str, select one of the following options: `"efficientface"`, `"marlin"`
 
 ### 6. Performing Grid Search
 
 - config/grid_search_config.py
 - --grid_search
 
-### 7. Performing Audio Feature Extraction
 
-### 8. Monitoring Performance:
+### 7. Monitoring Performance:
 
 Run
 
@@ -372,3 +367,11 @@ is from [Self-attention fusion for audiovisual emotion recognition with incomple
 Our Audio Feature Extraction Models:
 
 - [EAT: Self-Supervised Pre-Training with Efficient Audio Transformer](https://github.com/cwx-worst-one/EAT)
+- [X-Vectors](https://www.danielpovey.com/files/2018_icassp_xvectors.pdf)
+- [Resnet](https://arxiv.org/pdf/1512.03385.pdf)
+- [Emotion2vec](https://github.com/ddlBoJack/emotion2vec)
+
+Our Video Feature Extraction Models:
+
+- [MARLIN](https://github.com/ControlNet/MARLIN)
+- [EfficientFace](https://github.com/zengqunzhao/EfficientFace)

@@ -8,7 +8,7 @@ import numpy as np
 import argparse
 
 from torch.utils.data import DataLoader
-from model import get_model
+from TD3MF import get_model
 from preprocessing import Preprocessing
 from random_sequence_shuffler import RandomSequenceSampler
 

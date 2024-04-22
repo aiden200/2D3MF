@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 from dataset.celebv_hq import DataModule
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
-from model.classifier import TD3MF
+from TD3MF.classifier import TD3MF
 from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
@@ -117,6 +117,8 @@ def train(args, config):
 
     strategy = None if n_gpus <= 1 else "ddp"
     accelerator = "cpu" if n_gpus == 0 else "gpu"
+
+    config["model_name"] = f"{video_backbone}_{audio_backbone}_{middle_fusion_type}"
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
     ckpt_monitor = "val_auc"

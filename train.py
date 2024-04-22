@@ -82,7 +82,7 @@ if __name__ == '__main__':
     dm.setup()
 
     if adv_loss:
-        from model.marlin import Marlin
+        from TD3MF.marlin import Marlin
     else:
         raise NotImplementedError
 
