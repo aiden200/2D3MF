@@ -326,26 +326,24 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         print(f"Loading Audio Model: {self.audio_backbone}")
         self.audio_model = load_audio_model(self.audio_backbone, path=audio_model_path)
-        if self.audio_model:
-            self.audio_model.to(self.device)
 
     def feature_extraction(self, file_path):
         if not os.path.exists("temp"):
             os.mkdir("temp")
         audio_output_path = os.path.join("temp", "audio_clip.wav")
         video_output_path = os.path.join("temp", "video_clip.mp4")
-
-
         if self.video_model == None or (self.audio_model == None and self.audio_backbone != "eat"):
             self.load_models()
+ 
         fps = eval(ffmpeg.probe(file_path)["streams"][0]["avg_frame_rate"])
         crop_face_video(file_path, video_output_path, fps=fps)
-
+  
         clip = VideoFileClip(file_path)
         audio = clip.audio
         audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
         audio.close()
         clip.close()
+     
 
         # run through pretrained models
         if "marlin" in self.video_backbone:

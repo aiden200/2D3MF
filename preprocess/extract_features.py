@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from tqdm.auto import tqdm
 
+sys.path.append(".")
+
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import get_mfccs, audio_load
@@ -170,7 +172,7 @@ def extract_audio(audio_path, audio_model, n_feats):
     audio_features = torch.cat(audio_features, dim=0)
     return audio_features  # (n_feats, n_embedding)
 
-sys.path.append(".")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Dataset Feature Extraction")
