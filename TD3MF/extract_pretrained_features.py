@@ -92,7 +92,7 @@ def load_efficient_face_model(path=None, device="cpu"):
 def marlin_extraction(video_path, marlin_model, video_model):
     config = resolve_config(marlin_model)
     video_embeddings = video_model.extract_video(
-            video_path, crop_face=True,
+            video_path, crop_face=False,
             sample_rate=config.tubelet_size, stride=config.n_frames,
             keep_seq=False)
     return video_embeddings

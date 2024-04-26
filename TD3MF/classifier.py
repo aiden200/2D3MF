@@ -14,6 +14,8 @@ from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
 from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
 from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model, load_marlin_model, load_efficient_face_model, load_audio_model
 from moviepy.editor import VideoFileClip
+from util.face_sdk.face_crop import crop_face_video
+import ffmpeg
 import os
 
 
@@ -331,18 +333,17 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         audio_output_path = os.path.join("temp", "audio_clip.wav")
         video_output_path = os.path.join("temp", "video_clip.mp4")
 
-        clip = VideoFileClip(file_path)
-        audio = clip.audio
-        audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
-        video = clip.without_audio()
-        video.write_videofile(video_output_path, audio=False, codec='libx264')  # Saving the video as MP4
-        # cut it down to 10 seconds
-        audio.close()
-        video.close()
-        clip.close()
 
         if self.video_model == None or self.audio_model == None:
             self.load_models()
+        fps = eval(ffmpeg.probe(file_path)["streams"][0]["avg_frame_rate"])
+        crop_face_video(file_path, video_output_path, fps=fps)
+
+        clip = VideoFileClip(file_path)
+        audio = clip.audio
+        audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
+        audio.close()
+        clip.close()
 
         # run through pretrained models
         if "marlin" in self.video_backbone:
