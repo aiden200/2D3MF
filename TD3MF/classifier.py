@@ -229,9 +229,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         x = self._extract(x_v, x_a)
 
-        x1 = self.classifier_1(x)
+        out = self.classifier_1(x)
 
-        return x1.sigmoid()
+        if self.task == "binary":
+            out = out.sigmoid()
+
+        return out
     
     def _extract(self, x_v, x_a):
         if self.lp_only:  # only linear probing
@@ -367,12 +370,14 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         y_hat = self(x_v, x_a)
 
-        if self.task == "multilabel":  # this is incorrect because we throw a sigmoid.
+        if self.task == "multilabel": 
             y_hat = y_hat.flatten()
             y = y.flatten()
 
         loss = self.loss_fn(y_hat, y.float())
         prob = y_hat
+        if self.task != "binary":
+            prob = y_hat.sigmoid()
 
         acc = self.acc_fn(prob, y.float())
         auc = self.auc_fn(prob, y.float())
