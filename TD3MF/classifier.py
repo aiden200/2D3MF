@@ -12,7 +12,7 @@ from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
 from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
-from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model
+from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model, load_marlin_model, load_efficient_face_model, load_audio_model
 from moviepy.editor import VideoFileClip
 import os
 
@@ -80,6 +80,7 @@ class TD3MF(LightningModule):
         self.middle_fusion_type = middle_fusion_type
         self.out_dim = self.hidden_layers
         self.audio_pe = None
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.lf = False
         if fusion == "lf":
             self.lf = True
@@ -195,6 +196,10 @@ class TD3MF(LightningModule):
             self.loss_fn = BCELoss()
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
+        
+        # For feature extract and predict
+        self.video_model = None
+        self.audio_model = None
 
         print(f"{'-'*30}\nHyperparameters:\n{'-'*30}\nModel: {backbone}\nFinetune: {finetune}\nTask:\
 {task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
@@ -302,8 +307,24 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
         return x
-
     
+    def predict(self, file_path):
+        features = self.feature_extraction(file_path)
+        x = self.classifier_1(features)
+        out = x.sigmoid()
+        return (out > 0.5).float()
+    
+    def load_models(self, video_model_path=None, audio_model_path=None):
+        print(f"Loading Video Model: {self.video_backbone}")
+        if "marlin" in self.video_backbone:
+            self.video_model = load_marlin_model(self.marlin_backbone, path=video_model_path)
+        else:
+            self.video_model = load_efficient_face_model(path=video_model_path, device=self.device)
+        
+        print(f"Loading Audio Model: {self.audio_backbone}")
+        self.audio_model = load_audio_model(self.audio_backbone, path=audio_model_path)
+
+
     def feature_extraction(self, file_path):
         if not os.path.exists("temp"):
             os.mkdir("temp")
@@ -320,13 +341,16 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         video.close()
         clip.close()
 
+        if self.video_model == None or self.audio_model == None:
+            self.load_models()
+
         # run through pretrained models
         if "marlin" in self.video_backbone:
-            video_model = self.marlin_backbone
+            video_model_name = self.marlin_backbone
         else:
-            video_model = self.video_backbone
+            video_model_name = self.video_backbone
         with torch.no_grad():
-            x_v = forward_video_model(video_output_path, video_model)
+            x_v = forward_video_model(video_output_path, video_model_name, self.video_model)
             x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
             # run through pretrained weights
             out = self._extract(x_v, x_a)
