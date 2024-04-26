@@ -54,14 +54,15 @@ def train(args, config):
         if dataset not in available_datasets:
             raise ValueError(f"Dataset {dataset} not in {available_datasets}")
 
-    assert task == "deepfake", "Multi class task currently not implemented."
 
-    if task == "appearance":
-        num_classes = 40
-    elif task == "action":
-        num_classes = 35
+    if task == "emotion":
+        num_classes = 8
+        prediction_task = "multiclass"
+        if training_datasets != ["RAVDESS"] or eval_datasets != ["RAVDESS"]:
+            raise ValueError("For emotion task, Datasets besides RAVDESS not implemented!")
     elif task == "deepfake": 
         num_classes = 1  
+        prediction_task  = "binary"
     else:
         raise ValueError(f"Unknown task {task}")
 
@@ -70,7 +71,7 @@ def train(args, config):
 
         model = TD3MF(
             num_classes, config["backbone"], True, args.marlin_ckpt,
-            "binary", learning_rate,
+            prediction_task, learning_rate,
             args.n_gpus > 1, ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type
@@ -91,7 +92,7 @@ def train(args, config):
 
         model = TD3MF(
             num_classes, config["backbone"], False,
-            None, "binary", learning_rate, args.n_gpus > 1,
+            None, prediction_task, learning_rate, args.n_gpus > 1,
             ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type,
@@ -155,25 +156,27 @@ def eval_dataset(args, ckpt, dm):
     Seed.set(42)
     model.eval()
 
-    
-
     # collect predictions
     preds = trainer.predict(model, dm.test_dataloader())
     preds = torch.cat(preds)
     # collect ground truth
-    ys = torch.zeros_like(preds, dtype=torch.bool)
+    if model.task == "binary":
+        ys = torch.zeros_like(preds, dtype=torch.bool)
+    else:
+        ys = torch.zeros(preds.size(0), dtype=torch.long)
 
     for i, (_, y, _) in enumerate(tqdm(dm.test_dataloader())):
-        # print(ys, y)
         ys[i * args.batch_size: (i + 1) * args.batch_size] = y
-    # print(y.shape, ys.shape)
-    # print(torch.eq(y.float(), (preds > 0.5)))
 
-    # print(ys)
-    # preds = preds.sigmoid()
-    # print((preds > 0.5))
-    acc = model.acc_fn(preds, ys)
-    auc = model.auc_fn(preds, ys)
+
+    if model.task != "binary":
+        preds = preds.sigmoid()
+        acc = model.acc_fn(preds, ys)
+        auc = model.auc_fn(preds, ys)
+    else:
+        acc = model.acc_fn(preds, ys)
+        auc = model.auc_fn(preds, ys)
+
     results = {
         "acc": acc,
         "auc": auc
