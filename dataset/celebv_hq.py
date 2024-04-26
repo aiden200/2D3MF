@@ -23,7 +23,7 @@ class BaseDataSetLoader(LightningDataModule, ABC):
         super().__init__()
         self.data_root = data_root
         self.split = split
-        assert task in ("appearance", "action", "deepfake")
+        assert task in ("emotion", "deepfake")
         self.task = task
         self.take_num = take_num
         self.name_list = []
@@ -236,6 +236,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
     ):
         super().__init__(root_dir, split, training_datasets, eval_datasets, task, data_ratio, take_num)
         self.split = split
+        self.task = task
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.temporal_axis = temporal_axis
@@ -308,7 +309,16 @@ class LPFeaturesDataset(BaseDataSetLoader):
                 print("Error: 'emotion2vec' audio features are ill shaped, expected a 2D array")
         else:
             raise ValueError(f"Error in LPFeaturesDataset, incorrect audio backbone: {self.audio_feature}")
-        y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
+        
+        if self.task == "deepfake":
+            y = int(self.name_list[index][1].split("-")[-1]) # should be 0-real, 1-fake
+            true = torch.tensor([y], dtype=torch.float).bool()
+        elif self.task == "emotion":
+            y = int(self.name_list[index][1].split("-")[2]) - 1
+            # y_tensor = torch.tensor(y, dtype=torch.long) 
+            # true = torch.nn.functional.one_hot(y_tensor, num_classes=8).bool()
+            true = torch.tensor(y, dtype=torch.long)
+            
         
         if self.modality_dropout > 0:
             if torch.rand(1).item() < self.modality_dropout:
@@ -318,7 +328,7 @@ class LPFeaturesDataset(BaseDataSetLoader):
                     x_a = torch.randn(x_a.size())
         
         # print(x_a.shape, x_v.shape)
-        return x_v, torch.tensor([y], dtype=torch.float).bool(), x_a
+        return x_v, true, x_a
 
 
 class DataModule(LightningDataModule):

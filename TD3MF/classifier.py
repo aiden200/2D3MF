@@ -216,6 +216,13 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
     def forward(self, x_v, x_a):
         # print(x_v.shape, x_a.shape)
 
+        if self.lp_only:  # only linear probing
+            x_v = x_v.flatten(start_dim=1)
+            x = self.lp_only_fc(x_v)
+            if self.task == "binary":
+                x = x.sigmoid()
+            return x
+
         if self.model is not None:  # MARLIN ft
             # (B, temporal, T, C, H, W)
             x_v = x_v.permute(0, 1, 3, 2, 4, 5)
@@ -229,13 +236,14 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         x = self._extract(x_v, x_a)
 
-        x1 = self.classifier_1(x)
+        out = self.classifier_1(x)
 
-        return x1.sigmoid()
+        if self.task == "binary":
+            out = out.sigmoid()
+
+        return out
     
     def _extract(self, x_v, x_a):
-        if self.lp_only:  # only linear probing
-            return self.lp_only_fc(x_v)
 
         if self.audio_backbone == "MFCC":
             x_a = x_a.view(
@@ -364,18 +372,20 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x_v, y, x_a = batch  # video frames, label, audio mfccs
-
         y_hat = self(x_v, x_a)
 
-        if self.task == "multilabel":  # this is incorrect because we throw a sigmoid.
-            y_hat = y_hat.flatten()
-            y = y.flatten()
+        
+        if self.task == "binary":
+            y = y.float()
 
-        loss = self.loss_fn(y_hat, y.float())
+
+        loss = self.loss_fn(y_hat, y)
         prob = y_hat
+        if self.task != "binary":
+            prob = y_hat.sigmoid()
 
-        acc = self.acc_fn(prob, y.float())
-        auc = self.auc_fn(prob, y.float())
+        acc = self.acc_fn(prob, y)
+        auc = self.auc_fn(prob, y)
         return {"loss": loss, "acc": acc, "auc": auc}
 
     def training_step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]] = None, batch_idx: Optional[int] = None,
