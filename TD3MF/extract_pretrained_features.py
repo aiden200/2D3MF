@@ -105,7 +105,7 @@ def forward_video_model(video_path, model_name, video_model, device="cpu"):
         return efficientface_extraction(video_path, video_model, device)
 
 
-def forward_audio_model(audio_path, model_name, video_embeddings, audio_model):
+def forward_audio_model(audio_path, model_name, video_embeddings, audio_model, device="cpu"):
     if model_name == "MFCC":
         audio_embeddings = extract_audio(audio_path, audio_model, video_embeddings.shape[0])
     elif model_name == "xvectors":
@@ -122,6 +122,7 @@ def forward_audio_model(audio_path, model_name, video_embeddings, audio_model):
         if return_code != 0:
             raise ValueError(f"Something went wrong in the eat audio extraction")
         audio_embeddings = np.load(target_file)
+        audio_embeddings = torch.from_numpy(audio_embeddings).to(device)
     else:
         raise ValueError(f"Incorrect audio_backbone {model_name}")
     

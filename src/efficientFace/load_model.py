@@ -65,9 +65,9 @@ class EfficientFaceTemporal(nn.Module):
         modulated = self.modulator(out_stage2)
         local_out = self.local(x)
 
-        print("Stage2 Output:", out_stage2.shape)
-        print("Modulated Output:", modulated.shape)
-        print("Local Output:", local_out.shape)
+        # print("Stage2 Output:", out_stage2.shape)
+        # print("Modulated Output:", modulated.shape)
+        # print("Local Output:", local_out.shape)
         x = modulated + local_out  
         x = self.stage3(x)
         x = self.stage4(x)

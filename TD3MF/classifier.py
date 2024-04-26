@@ -82,7 +82,6 @@ class TD3MF(LightningModule):
         self.middle_fusion_type = middle_fusion_type
         self.out_dim = self.hidden_layers
         self.audio_pe = None
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.lf = False
         if fusion == "lf":
             self.lf = True
@@ -98,6 +97,7 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = 768
             downsample = False
             self.eat_down = EatConvBlock(downsample) # brings (B, 512, 768) -> (B, 128, 768). Downsample brings it to (B, 10, 768)
+            # self.eat_down.to(self.device)
         elif audio_backbone == "xvectors":
             self.audio_hidden_layers = 768
             self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
@@ -322,10 +322,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             self.video_model = load_marlin_model(self.marlin_backbone, path=video_model_path)
         else:
             self.video_model = load_efficient_face_model(path=video_model_path, device=self.device)
-        
+        self.video_model.to(self.device)
+
         print(f"Loading Audio Model: {self.audio_backbone}")
         self.audio_model = load_audio_model(self.audio_backbone, path=audio_model_path)
-
+        if self.audio_model:
+            self.audio_model.to(self.device)
 
     def feature_extraction(self, file_path):
         if not os.path.exists("temp"):
@@ -334,7 +336,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         video_output_path = os.path.join("temp", "video_clip.mp4")
 
 
-        if self.video_model == None or self.audio_model == None:
+        if self.video_model == None or (self.audio_model == None and self.audio_backbone != "eat"):
             self.load_models()
         fps = eval(ffmpeg.probe(file_path)["streams"][0]["avg_frame_rate"])
         crop_face_video(file_path, video_output_path, fps=fps)
@@ -351,8 +353,12 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         else:
             video_model_name = self.video_backbone
         with torch.no_grad():
-            x_v = forward_video_model(video_output_path, video_model_name, self.video_model)
-            x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
+            x_v = forward_video_model(video_output_path, video_model_name, self.video_model, device=self.device)
+            x_a = forward_audio_model(audio_output_path, self.audio_backbone, x_v, self.audio_model, device=self.device)
+            if len(x_a.shape) == 2:
+                x_a = x_a.unsqueeze(0)
+            if len(x_v.shape) == 2:
+                x_v = x_v.unsqueeze(0)
             # run through pretrained weights
             out = self._extract(x_v, x_a)
             
