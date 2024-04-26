@@ -12,8 +12,10 @@ from torchmetrics.classification import BinaryAccuracy, BinaryAUROC
 from torch.nn import BatchNorm1d, LayerNorm, ReLU, LeakyReLU
 from TD3MF.transformer_blocks import AttentionBlock, PositionalEncoding
 from TD3MF.multi_modal_middle_fusion import AudioCNNPool, VideoCnnPool, EatConvBlock
-from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model
+from TD3MF.extract_pretrained_features import forward_audio_model, forward_video_model, load_marlin_model, load_efficient_face_model, load_audio_model
 from moviepy.editor import VideoFileClip
+from util.face_sdk.face_crop import crop_face_video
+import ffmpeg
 import os
 
 
@@ -95,6 +97,7 @@ class TD3MF(LightningModule):
             self.audio_hidden_layers = 768
             downsample = False
             self.eat_down = EatConvBlock(downsample) # brings (B, 512, 768) -> (B, 128, 768). Downsample brings it to (B, 10, 768)
+            # self.eat_down.to(self.device)
         elif audio_backbone == "xvectors":
             self.audio_hidden_layers = 768
             self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
@@ -195,6 +198,10 @@ class TD3MF(LightningModule):
             self.loss_fn = BCELoss()
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
+        
+        # For feature extract and predict
+        self.video_model = None
+        self.audio_model = None
 
         print(f"{'-'*30}\nHyperparameters:\n{'-'*30}\nModel: {backbone}\nFinetune: {finetune}\nTask:\
 {task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
@@ -302,32 +309,56 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
         x = torch.cat((audio_pooled, video_pooled), dim=-1)
 
         return x
-
     
+    def predict(self, file_path):
+        features = self.feature_extraction(file_path)
+        x = self.classifier_1(features)
+        out = x.sigmoid()
+        return (out > 0.5).float()
+    
+    def load_models(self, video_model_path=None, audio_model_path=None):
+        print(f"Loading Video Model: {self.video_backbone}")
+        if "marlin" in self.video_backbone:
+            self.video_model = load_marlin_model(self.marlin_backbone, path=video_model_path)
+        else:
+            self.video_model = load_efficient_face_model(path=video_model_path, device=self.device)
+        self.video_model.to(self.device)
+
+        print(f"Loading Audio Model: {self.audio_backbone}")
+        self.audio_model = load_audio_model(self.audio_backbone, path=audio_model_path)
+        if self.audio_model:
+            self.audio_model.to(self.device)
+
     def feature_extraction(self, file_path):
         if not os.path.exists("temp"):
             os.mkdir("temp")
         audio_output_path = os.path.join("temp", "audio_clip.wav")
         video_output_path = os.path.join("temp", "video_clip.mp4")
 
+
+        if self.video_model == None or (self.audio_model == None and self.audio_backbone != "eat"):
+            self.load_models()
+        fps = eval(ffmpeg.probe(file_path)["streams"][0]["avg_frame_rate"])
+        crop_face_video(file_path, video_output_path, fps=fps)
+
         clip = VideoFileClip(file_path)
         audio = clip.audio
         audio.write_audiofile(audio_output_path, codec='pcm_s16le')  # Saving the audio as WAV
-        video = clip.without_audio()
-        video.write_videofile(video_output_path, audio=False, codec='libx264')  # Saving the video as MP4
-        # cut it down to 10 seconds
         audio.close()
-        video.close()
         clip.close()
 
         # run through pretrained models
         if "marlin" in self.video_backbone:
-            video_model = self.marlin_backbone
+            video_model_name = self.marlin_backbone
         else:
-            video_model = self.video_backbone
+            video_model_name = self.video_backbone
         with torch.no_grad():
-            x_v = forward_video_model(video_output_path, video_model)
-            x_a = forward_audio_model(x_a, self.audio_backbone, x_v)
+            x_v = forward_video_model(video_output_path, video_model_name, self.video_model, device=self.device)
+            x_a = forward_audio_model(audio_output_path, self.audio_backbone, x_v, self.audio_model, device=self.device)
+            if len(x_a.shape) == 2:
+                x_a = x_a.unsqueeze(0)
+            if len(x_v.shape) == 2:
+                x_v = x_v.unsqueeze(0)
             # run through pretrained weights
             out = self._extract(x_v, x_a)
             
