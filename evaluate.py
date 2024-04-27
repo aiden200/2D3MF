@@ -41,6 +41,7 @@ def train(args, config):
     middle_fusion_type = config['middle_fusion_type']
     training_datasets = config['training_datasets']
     eval_datasets = config['eval_datasets']
+    audio_only = config['audio_only']
 
     video_backbone = config.get('video_backbone', 'marlin')
 
@@ -96,7 +97,7 @@ def train(args, config):
             ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type,
-            video_backbone=video_backbone
+            video_backbone=video_backbone, audio_only=audio_only
         )
 
         dm = DataModule(
@@ -122,7 +123,7 @@ def train(args, config):
     config["model_name"] = f"{video_backbone}_{audio_backbone}_{middle_fusion_type}"
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
-    ckpt_monitor = "val_auc"
+    ckpt_monitor = "val_acc"
 
     try:
         precision = int(args.precision)

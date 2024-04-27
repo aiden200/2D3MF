@@ -86,6 +86,78 @@ def get_first_id_number(filename):
     return None
 
 
+def split_DFDC(root: str, test: float, val: float, feat_type:str):
+    videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
+              os.listdir(os.path.join(root, 'cropped'))))
+    f = filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),os.listdir(os.path.join(root, 'test_video')))
+    test_videos = list(f)
+    
+    train = []
+    test = []
+    val = []
+    
+    for filename in videos:
+        if filename in test_videos:
+            test.append(filename)
+
+
+
+    random.shuffle(train)
+    random.shuffle(test)
+    random.shuffle(val)
+    
+    print(f"Train: {len(train)}, Val: {len(val)}, Test: {len(test)}")
+
+    with open(os.path.join(root, f"train_{feat_type}.txt"), "w") as f:
+        for video in train:
+            f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"val_{feat_type}.txt"), "w") as f:
+        for video in val:
+            f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"test_{feat_type}.txt"), "w") as f:
+        for video in test:
+            f.write(video[:-4] + "\n")
+
+def split_RAVDESS(root: str, test: float, val: float, feat_type:str):
+    videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
+              os.listdir(os.path.join(root, 'cropped'))))
+    
+    test_speakers = ["05", "10", "16", "19"]
+    val_speakers = ["11", "13", "18", "22"]
+    train = []
+    test = []
+    val = []
+    for filename in videos:
+        speaker_id = filename.split('-')[-2]
+        if speaker_id in test_speakers:
+            test.append(filename)
+        elif speaker_id in val_speakers:
+            val.append(filename)
+        else:
+            train.append(filename)
+
+
+    random.shuffle(train)
+    random.shuffle(test)
+    random.shuffle(val)
+    
+    print(f"Train: {len(train)}, Val: {len(val)}, Test: {len(test)}")
+
+    with open(os.path.join(root, f"train_{feat_type}.txt"), "w") as f:
+        for video in train:
+            f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"val_{feat_type}.txt"), "w") as f:
+        for video in val:
+            f.write(video[:-4] + "\n")
+
+    with open(os.path.join(root, f"test_{feat_type}.txt"), "w") as f:
+        for video in test:
+            f.write(video[:-4] + "\n")
+
+
 #NOTE: FakeAVCeleb has to be split such that there is no overlap of speakers among the train/eval/test splits
 def split_fakeAVCeleb(root: str, test: float, val: float, feat_type:str):
     videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
@@ -182,6 +254,10 @@ if __name__ == '__main__':
         split_DeepfakeTIMIT(data_root, args.test, args.val, feat_type)
     elif "FakeAVCeleb" in data_root:
         split_fakeAVCeleb(data_root, args.test, args.val, feat_type)
+    elif "RAVDESS" in data_root:
+        split_RAVDESS(data_root, args.test, args.val, feat_type)
+    elif "DFDC" in data_root:
+        split_DFDC(data_root, args.test, args.val, feat_type)
     else:
         split_dataset(data_root, args.test, args.val, feat_type)
          
