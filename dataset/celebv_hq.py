@@ -46,7 +46,6 @@ class BaseDataSetLoader(LightningDataModule, ABC):
 
         elif "val" in split: # only test datasets are included in val
             for dataset in training_datasets:
-                
                 dataset_path = os.path.join(data_root, dataset)
                 path = os.path.join(dataset_path, f"{split}.txt")
                 assert os.path.exists(path), f"Missing split {path}"
@@ -54,8 +53,7 @@ class BaseDataSetLoader(LightningDataModule, ABC):
                 self.name_list += [(dataset_path, x) for x in files]
                 
         else:
-            for dataset in training_datasets:
-
+            for dataset in eval_datasets:
                 dataset_path = os.path.join(data_root, dataset)
                 if dataset not in training_datasets:
                     for dataset_split in [split, split.replace("test", "train"), split.replace("test", "val")]:

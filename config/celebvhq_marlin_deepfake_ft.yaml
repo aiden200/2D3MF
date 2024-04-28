@@ -8,7 +8,7 @@ learning_rate: 5.00e-4
 seq_mean_pool: true
 finetune: false
 ir_layers: "conv"
-num_heads: 2
+num_heads: 1
 temporal_axis: 10
 fusion: "mf"
 audio_positional_encoding: false
