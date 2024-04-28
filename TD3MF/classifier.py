@@ -218,7 +218,7 @@ class TD3MF(LightningModule):
 {task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
 IR Layers: {ir_layers}\nNum Heads: {num_heads}\nTemporal Axis: {temporal_axis}\n\
 Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {self.hidden_layers}\n\
-lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
+lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\nMiddle Fusion Type: {middle_fusion_type}\n{'-'*30}")
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -274,8 +274,8 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
         elif self.audio_backbone == "xvectors":
             x_a = self.fc_xvec(x_a) # project embedding 7205 -> 128  
-        elif self.audio_backbone == "eat":
-            x_a = self.eat_down(x_a) # (B, 512, 768) -> (B, 128, 768) 
+        # elif self.audio_backbone == "eat":
+        #     x_a = self.eat_down(x_a) # (B, 512, 768) -> (B, 128, 768) 
         
         return x_a
 

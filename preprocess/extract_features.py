@@ -91,11 +91,11 @@ def marlin_video_extraction(save_path, video_model, video_path, config):
 
 def get_eat(video_name, dataset_dir, raw_audio_path, video_path, audio_name):
     if not os.path.exists(os.path.join(dataset_dir, "eat", audio_name + ".npy")):
-        print(os.path.join(dataset_dir, "eat", audio_name + ".npy"))
+        # print(os.path.join(dataset_dir, "eat", audio_name + ".npy"))
         audio_save_path = os.path.join(dataset_dir, "eat")
         return_code = extract_features_eat(raw_audio_path, audio_save_path, audio_name + ".wav", new_filename=video_name.replace(".mp4", ".npy"))
         if return_code != 0:
-            print(f"Eat feature extraction: {video_path} error.")
+            print(f"Eat feature extraction: {video_path} error. {return_code}")
     
             return video_name[:-4]
     return 0
@@ -271,15 +271,15 @@ if __name__ == '__main__':
         #     continue 
 
         if os.path.exists(video_path):
-            try:
-                if args.video_backbone in marlin_configurations:
-                    video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
-                elif args.video_backbone == "efficientface":
-                    video_embeddings = efficientface_video_extraction(video_save_path, video_model, video_path)
-            except Exception as e:
-                print(f"Video {video_path} error.", e)
-                corrupted_files.append(video_name[:-4])
-                continue
+            # try:
+            if args.video_backbone in marlin_configurations:
+                video_embeddings = marlin_video_extraction(video_save_path, video_model, video_path, config)
+            elif args.video_backbone == "efficientface":
+                video_embeddings = efficientface_video_extraction(video_save_path, video_model, video_path)
+            # except Exception as e:
+            #     print(f"Video {video_path} error.", e)
+            #     corrupted_files.append(video_name[:-4])
+                
         if os.path.exists(audio_path):
             try:
                 # Audio Feature Extraction

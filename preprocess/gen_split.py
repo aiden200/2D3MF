@@ -1,4 +1,4 @@
-import os, random, argparse
+import os, random, argparse, math
 
 def ff_split_dataset(directory, test_ratio=0.1, val_ratio=0.1, feat_type="MFCC"):
     """
@@ -89,22 +89,28 @@ def get_first_id_number(filename):
 def split_DFDC(root: str, test: float, val: float, feat_type:str):
     videos = list(filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),
               os.listdir(os.path.join(root, 'cropped'))))
-    f = filter(lambda x: x.endswith('.mp4') and os.path.exists(os.path.join(root, feat_type, x.replace(".mp4", ".npy"))),os.listdir(os.path.join(root, 'test_video')))
+    f = filter(lambda x: x.endswith('.mp4'),os.listdir(os.path.join(root, 'test_video')))
     test_videos = list(f)
     
     train = []
     test = []
-    val = []
-    
+
     for filename in videos:
-        if filename in test_videos:
+        print(filename.split("-")[0] + ".mp4")
+        if filename.split("-")[0] + ".mp4" in test_videos:
             test.append(filename)
+    
 
+    random.shuffle(videos)
 
+    print(len(videos))
 
-    random.shuffle(train)
+    split = len(videos) - int(math.ceil(len(videos) * val))
+    train = videos[:split]
+    val = videos[split:]
+
     random.shuffle(test)
-    random.shuffle(val)
+
     
     print(f"Train: {len(train)}, Val: {len(val)}, Test: {len(test)}")
 
