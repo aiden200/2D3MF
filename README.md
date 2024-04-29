@@ -24,6 +24,9 @@
    </a> -->
 </div>
 
+> [!CAUTION]
+> This repo is under development. No hyper parameter tuning is presented yet here; hence, the current architecture is not optimal for deepfake detection.
+
 <!-- <div align="center">    -->
 <!--    <a href="https://pypi.org/project/marlin-pytorch/">-->
 <!--        <img src="https://img.shields.io/pypi/v/marlin-pytorch?style=flat-square">-->
