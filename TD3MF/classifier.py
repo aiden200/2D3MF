@@ -59,7 +59,8 @@ class TD3MF(LightningModule):
                  lp_only: bool = False,
                  audio_backbone: str = "MFCC",
                  middle_fusion_type: str = "default",
-                 video_backbone: str = "marlin"
+                 video_backbone: str = "marlin",
+                 audio_only: bool = False
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -93,18 +94,25 @@ class TD3MF(LightningModule):
 
         if audio_backbone == "MFCC":
             self.audio_hidden_layers = self.hidden_layers
+            audio_temp_axis = 10
         elif audio_backbone == "eat":
             self.audio_hidden_layers = 768
             downsample = False
             self.eat_down = EatConvBlock(downsample) # brings (B, 512, 768) -> (B, 128, 768). Downsample brings it to (B, 10, 768)
-            # self.eat_down.to(self.device)
+            audio_temp_axis = 128
+            if downsample:
+                audio_temp_axis = 10
+
         elif audio_backbone == "xvectors":
             self.audio_hidden_layers = 768
             self.fc_xvec = nn.Linear(7205, self.audio_hidden_layers) # project to a smaller dimension
+            audio_temp_axis = 10
         elif audio_backbone == "emotion2vec":
             self.audio_hidden_layers = 768
+            audio_temp_axis = 10
         elif audio_backbone == "resnet":
             self.audio_hidden_layers = 512
+            audio_temp_axis = 10
         else:
             raise ValueError("Unsupported audio backbone: Must be one of (MFCC, eat, xvectors, emotion2vec, resnet)")
         # add resenet and stuff
@@ -113,6 +121,9 @@ class TD3MF(LightningModule):
         if lp_only:
             self.lp_only_fc = nn.Linear(
                 self.temporal_axis * config.encoder_embed_dim, num_classes)
+        self.audio_only = audio_only
+        if audio_only:
+            self.audio_only_fc = nn.Linear(audio_temp_axis * self.audio_hidden_layers, num_classes)
 
         self.audio_model_cnn = AudioCNNPool(num_classes=128,
                                             h_dim=self.audio_hidden_layers,  # audio hidden layers
@@ -207,7 +218,7 @@ class TD3MF(LightningModule):
 {task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
 IR Layers: {ir_layers}\nNum Heads: {num_heads}\nTemporal Axis: {temporal_axis}\n\
 Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {self.hidden_layers}\n\
-lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
+lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\nMiddle Fusion Type: {middle_fusion_type}\n{'-'*30}")
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -215,10 +226,21 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
     def forward(self, x_v, x_a):
         # print(x_v.shape, x_a.shape)
+        # x_v = torch.ones(x_v.size()).to(self.device)
+        # print(x_v.shape)
+        # x_a = torch.ones(x_a.size()).to(self.device)
 
         if self.lp_only:  # only linear probing
             x_v = x_v.flatten(start_dim=1)
             x = self.lp_only_fc(x_v)
+            if self.task == "binary":
+                x = x.sigmoid()
+            return x
+
+        if self.audio_only:  # only audio
+            x_a = self._audio_adjustment(x_a)
+            x_a = x_a.flatten(start_dim=1)
+            x = self.audio_only_fc(x_a)
             if self.task == "binary":
                 x = x.sigmoid()
             return x
@@ -243,8 +265,7 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
 
         return out
     
-    def _extract(self, x_v, x_a):
-
+    def _audio_adjustment(self, x_a):
         if self.audio_backbone == "MFCC":
             x_a = x_a.view(
                 (x_a.shape[0]*self.temporal_axis, x_a.shape[2], x_a.shape[3]))
@@ -253,9 +274,15 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
                 (x_a.shape[0]//self.temporal_axis, self.temporal_axis, x_a.shape[1]))
         elif self.audio_backbone == "xvectors":
             x_a = self.fc_xvec(x_a) # project embedding 7205 -> 128  
-        elif self.audio_backbone == "eat":
-            x_a = self.eat_down(x_a) # (B, 512, 768) -> (B, 128, 768) 
+        # elif self.audio_backbone == "eat":
+        #     x_a = self.eat_down(x_a) # (B, 512, 768) -> (B, 128, 768) 
+        
+        return x_a
 
+
+    def _extract(self, x_v, x_a):
+
+        x_a = self._audio_adjustment(x_a)
 
         if self.audio_pe:
             # (B, T, E)
@@ -299,8 +326,11 @@ lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\n{'-'*30}")
             raise ValueError(f"Incorrect middle fusion type: {self.middle_fusion_type}\nMust be one of (default, alternate1, self-attention, cross-attention)")
         
         
-        x_a = h_av * x_a
-        x_v = h_va * x_v
+        # x_a = h_av * x_a
+        # x_v = h_va * x_v
+        x_a = h_av + x_a
+        x_v = h_va + x_v
+        
 
         x_v = x_v.permute(0, 2, 1)
         x_a = x_a.permute(0, 2, 1)

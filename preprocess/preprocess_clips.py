@@ -14,7 +14,9 @@ def crop_face(root: str):
     source_dir = os.path.join(root, "video")
     target_dir = os.path.join(root, "cropped")
     process_videos(source_dir, target_dir, ext="mp4")
-
+    if "DFDC" in root and os.path.exists(os.path.join(root, "test_video")):
+        process_videos(os.path.join(root, "test_video"), target_dir, ext="mp4")
+        
 def find_file_by_prefix(directory, prefix):
     """
     Finds the first file in the specified directory that starts with the given prefix.

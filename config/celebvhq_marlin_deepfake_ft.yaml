@@ -4,18 +4,19 @@ training_datasets: ["RAVDESS"] #DeepfakeTIMIT,RAVDESS, Forensics++, DFDC, FakeAV
 eval_datasets: ["RAVDESS"]
 task: "emotion" #deepfake, emotion
 temporal_reduction: "mean"
-learning_rate: 1.00e-3
+learning_rate: 5.00e-4
 seq_mean_pool: true
 finetune: false
 ir_layers: "conv"
-num_heads: 2
+num_heads: 1
 temporal_axis: 10
 fusion: "mf"
-audio_positional_encoding: True
-hidden_layers: 128
-lp_only: True
+audio_positional_encoding: false
+hidden_layers: 64
+lp_only: false
 audio_backbone: "eat" # MFCC, eat, xvectors, resnet, emotion2vec
 middle_fusion_type: "default" # default, audio_refuse, video_refuse, self_attention, multi_attention, self_cross_attention
 modality_dropout: 0.0
 video_backbone: 'marlin' # marlin, efficientface
+audio_only: false
 
