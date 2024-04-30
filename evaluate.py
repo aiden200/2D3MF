@@ -59,11 +59,13 @@ def train(args, config):
     if task == "emotion":
         num_classes = 8
         prediction_task = "multiclass"
+        ckpt_monitor = "val_acc"
         if training_datasets != ["RAVDESS"] or eval_datasets != ["RAVDESS"]:
             raise ValueError("For emotion task, Datasets besides RAVDESS not implemented!")
     elif task == "deepfake": 
         num_classes = 1  
         prediction_task  = "binary"
+        ckpt_monitor = "val_auc"
     else:
         raise ValueError(f"Unknown task {task}")
 
@@ -97,7 +99,8 @@ def train(args, config):
             ir_layers, num_heads, temporal_axis=temporal_axis,
             audio_pe=audio_pe, fusion=fusion, hidden_layers=hidden_layers,
             lp_only=lp_only, audio_backbone=audio_backbone, middle_fusion_type=middle_fusion_type,
-            video_backbone=video_backbone, audio_only=audio_only
+            video_backbone=video_backbone, audio_only=audio_only, 
+            training_datasets=training_datasets, eval_datasets=eval_datasets
         )
 
         dm = DataModule(
@@ -123,7 +126,6 @@ def train(args, config):
     config["model_name"] = f"{video_backbone}_{audio_backbone}_{middle_fusion_type}"
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
-    ckpt_monitor = "val_acc"
 
     try:
         precision = int(args.precision)
