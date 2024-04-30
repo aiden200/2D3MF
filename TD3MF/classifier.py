@@ -318,18 +318,18 @@ Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}
             h_va = self.va1(x_a, x_v)  
         elif self.middle_fusion_type == 'audio_refuse': 
             h_va = self.va1(x_a, x_v)
-            h_av = self.av1(x_v*h_va, x_a)
+            h_av = self.av1(x_v+h_va, x_a)
         elif self.middle_fusion_type == 'video_refuse':
             h_av = self.av1(x_v, x_a)  
-            h_va = self.va1(x_a*h_av, x_v) 
+            h_va = self.va1(x_a+h_av, x_v) 
         elif self.middle_fusion_type == 'self_attention':
             h_va = self.vv(x_v, x_v) 
             h_av = self.aa(x_a, x_a) 
         elif self.middle_fusion_type == 'multi_attention':
             h_av1 = self.av1(x_v, x_a)  
             h_va1 = self.va1(x_a, x_v)  
-            x_a = x_a * h_av1
-            x_v = x_v * h_va1
+            x_a = x_a + h_av1
+            x_v = x_v + h_va1
             h_av2 = self.av1(x_v, x_a)  
             h_va2 = self.va1(x_a, x_v)
             h_av = h_av2
@@ -337,8 +337,8 @@ Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}
         elif self.middle_fusion_type == "self_cross_attention":
             h_vv = self.vv(x_v, x_v) 
             h_aa = self.aa(x_a, x_a)  
-            x_v = x_v * h_vv
-            x_a = x_a * h_aa
+            x_v = x_v + h_vv
+            x_a = x_a + h_aa
             h_av = self.av1(x_v, x_a)  
             h_va = self.va1(x_a, x_v) 
         else:
