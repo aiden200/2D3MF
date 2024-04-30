@@ -215,7 +215,8 @@ class TD3MF(LightningModule):
         self.task = task
 
         if task == "binary":
-            self.loss_fn = FocalLoss()
+            # self.loss_fn = FocalLoss()
+            self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
         elif task == "multiclass":
