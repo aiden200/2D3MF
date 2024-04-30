@@ -20,6 +20,7 @@ import os
 
 
 import torch.nn as nn
+import torch.nn.functional as F
 import time
 import torch
 import numpy as np
@@ -43,6 +44,20 @@ def conv1d_block_audio(in_channels, out_channels, kernel_size=3, stride=1, paddi
                          nn.ReLU(inplace=True), nn.MaxPool1d(2, 1))
 
 
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, inputs, targets):
+        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        targets = targets.float()
+        at = self.alpha * targets + (1 - self.alpha) * (1 - targets)
+        pt = torch.exp(-BCE_loss)
+        F_loss = at * (1-pt)**self.gamma * BCE_loss
+        return F_loss.mean()
+
 class TD3MF(LightningModule):
 
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
@@ -60,7 +75,9 @@ class TD3MF(LightningModule):
                  audio_backbone: str = "MFCC",
                  middle_fusion_type: str = "default",
                  video_backbone: str = "marlin",
-                 audio_only: bool = False
+                 audio_only: bool = False,
+                 training_datasets: list = [],
+                 eval_datasets: list = []
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -198,6 +215,7 @@ class TD3MF(LightningModule):
         self.task = task
 
         if task == "binary":
+            # self.loss_fn = FocalLoss()
             self.loss_fn = BCELoss()
             self.acc_fn = BinaryAccuracy()
             self.auc_fn = BinaryAUROC()
@@ -218,7 +236,8 @@ class TD3MF(LightningModule):
 {task}\nLearning Rate: {learning_rate}\nDistributed: {distributed}\n\
 IR Layers: {ir_layers}\nNum Heads: {num_heads}\nTemporal Axis: {temporal_axis}\n\
 Audio Positional Encoding: {audio_pe}\nFusion: {fusion}\nHidden layer size: {self.hidden_layers}\n\
-lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\nMiddle Fusion Type: {middle_fusion_type}\n{'-'*30}")
+lp_only: {lp_only}\nAudio Backbone: {audio_backbone}\nMiddle Fusion Type: {middle_fusion_type}\n\
+Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}")
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
