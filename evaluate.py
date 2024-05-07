@@ -244,7 +244,7 @@ def evaluate(args):
                 'python', 'evaluate.py',
                 '--config', file_path,
                 '--data_path', args.data_path,
-                '--num_workers', args.num_works,
+                '--num_workers', args.num_workers,
                 '--batch_size', batch_size,
                 '--marlin_ckpt', args.marlin_ckpt,
                 '--epochs', epochs
