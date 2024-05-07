@@ -7,9 +7,10 @@ FUSION = ["MF", "LF"]
 ATTENTION_HEADS = [1,2,3]
 H_DIM = [128]
 PE = [True, False]
+MF_TYPE = ["default", "audio_refuse", "video_refuse", "self_attention", "multi_attention", "self_cross_attention"]
 
 AVERAGE_OVER = 3 # trials per configurations
-CONFIGURATION_LIST = [BATCH_SIZE, LR, EPOCH, FUSION, ATTENTION_HEADS, H_DIM, PE]
+CONFIGURATION_LIST = [BATCH_SIZE, LR, EPOCH, FUSION, ATTENTION_HEADS, H_DIM, PE, MF_TYPE]
 
 CONFIGURATIONS = list(itertools.product(*CONFIGURATION_LIST))
 # for config in tqdm(CONFIGURATIONS):
