@@ -264,14 +264,6 @@ def evaluate(args):
             except (StopIteration, json.JSONDecodeError) as e:
                 print("Failed to parse results:", e)
 
-            args.epochs = epochs
-            config["learning_rate"] = lr
-            config['num_heads'] = attention_heads
-            config['audio_positional_encoding'] = pe
-            config['fusion'] = fusion
-            config['hidden_layers'] = h_dim
-            args.batch_size = batch_size
-
             results.append({
                 "batch_size": batch_size,
                 "learning_rate": lr,
@@ -285,7 +277,7 @@ def evaluate(args):
             })
 
         results.sort(key=lambda x: x['auc'], reverse=True)
-        results.sort(key=lambda x: x['auc'], reverse=True)
+        # results.sort(key=lambda x: x['auc'], reverse=True)
         with open(outfile, "w", newline='') as f:
             fieldnames = ["batch_size", "learning_rate", "epochs", "fusion", 
                         "attention_heads", "hidden_dimensions", "audio_positional_encoding", "auc", "acc"]
