@@ -44,7 +44,7 @@ class AudioCNNPool(nn.Module):
     def forward(self, x):
         x = self.forward_stage1(x)
         x = self.forward_stage2(x)
-        # x = self.forward_classifier(x)
+        x = self.forward_classifier(x)
         return x
 
     def forward_stage1(self,x):            

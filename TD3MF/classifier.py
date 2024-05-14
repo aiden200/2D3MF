@@ -142,7 +142,7 @@ class TD3MF(LightningModule):
         if audio_only:
             self.audio_only_fc = nn.Linear(audio_temp_axis * self.audio_hidden_layers, num_classes)
 
-        self.audio_model_cnn = AudioCNNPool(num_classes=128,
+        self.audio_model_cnn = AudioCNNPool(num_classes=self.audio_hidden_layers,
                                             h_dim=self.audio_hidden_layers,  # audio hidden layers
                                             out_dim=self.audio_hidden_layers)
         self.video_model_cnn = VideoCnnPool(num_classes=1,
