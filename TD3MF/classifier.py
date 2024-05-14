@@ -144,7 +144,7 @@ class TD3MF(LightningModule):
 
         self.audio_model_cnn = AudioCNNPool(num_classes=128,
                                             h_dim=self.audio_hidden_layers,  # audio hidden layers
-                                            out_dim=self.out_dim)
+                                            out_dim=self.audio_hidden_layers)
         self.video_model_cnn = VideoCnnPool(num_classes=1,
                                             input_dim=config.encoder_embed_dim,
                                             h_dim=self.hidden_layers,
@@ -192,13 +192,13 @@ class TD3MF(LightningModule):
                 out_dim=self.audio_hidden_layers, 
                 num_heads=num_heads)
         self.av2 = AttentionBlock(
-            in_dim_k=self.audio_hidden_layers, #audio hidden layers
-            in_dim_q=self.hidden_layers,
+            in_dim_k=self.hidden_layers, #audio hidden layers
+            in_dim_q=self.audio_hidden_layers,
             out_dim=self.audio_hidden_layers, #audio hidden layers
             num_heads=num_heads)
         self.va2 = AttentionBlock(
-            in_dim_k=self.hidden_layers,
-            in_dim_q=self.audio_hidden_layers, #audio hidden layers
+            in_dim_k=self.audio_hidden_layers,
+            in_dim_q=self.hidden_layers, #audio hidden layers
             out_dim=self.hidden_layers,
             num_heads=num_heads) 
 
@@ -300,7 +300,6 @@ Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}
 
 
     def _extract(self, x_v, x_a):
-
         x_a = self._audio_adjustment(x_a)
 
         if self.audio_pe:
@@ -314,6 +313,7 @@ Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}
 
         if self.middle_fusion_type == 'default':
             # DEFAULT MIDDLE FUSION
+            # print(x_v.shape, x_a.shape)
             h_av = self.av1(x_v, x_a)  
             h_va = self.va1(x_a, x_v)  
         elif self.middle_fusion_type == 'audio_refuse': 
@@ -330,8 +330,8 @@ Training datasets: {training_datasets}\nEval datasets: {eval_datasets}\n{'-'*30}
             h_va1 = self.va1(x_a, x_v)  
             x_a = x_a + h_av1
             x_v = x_v + h_va1
-            h_av2 = self.av1(x_v, x_a)  
-            h_va2 = self.va1(x_a, x_v)
+            h_av2 = self.av2(x_v, x_a)  
+            h_va2 = self.va2(x_a, x_v)
             h_av = h_av2
             h_va = h_va2
         elif self.middle_fusion_type == "self_cross_attention":
