@@ -44,7 +44,7 @@
 <!--</div>-->
 
 This repo is the implementation for the paper
-[2D3MF: Deepfake Detection using Multi Modal Middle Fusion](https://).
+[2D3MF: Deepfake Detection using Multi Modal Middle Fusion](https://drive.google.com/file/d/10gjCXD-Bkpe5J_U6OYoDl57_HDTo6K4Q/view?usp=sharing).
 
 ## Repository Structure
 
