@@ -1,4 +1,4 @@
-import argparse, os
+import argparse, os, yaml
 
 import torch
 from pytorch_lightning import Trainer
@@ -16,6 +16,7 @@ from util.system_stats_logger import SystemStatsLogger
 
 from config.grid_search_config import CONFIGURATIONS
 import subprocess
+import json
 import csv
 
 
@@ -189,6 +190,7 @@ def eval_dataset(args, ckpt, dm):
     return auc, acc
 
 
+
 def evaluate(args):
     config = read_yaml(args.config)
 
@@ -196,44 +198,86 @@ def evaluate(args):
         results = []
         outfile = "Grid_search_results"
         
-        try:
-            for search in tqdm(CONFIGURATIONS):
-                batch_size, lr, epochs, fusion, attention_heads, h_dim, pe = search
-                print(f"Running grid search with the following parameters:")
-                print(f"Batch Size: {batch_size}")
-                print(f"Learning Rate: {lr}")
-                print(f"Epochs: {epochs}")
-                print(f"Fusion: {fusion}")
-                print(f"Attention Heads: {attention_heads}")
-                print(f"Hidden Dimensions: {h_dim}")
-                print(f"Audio Positional Encoding: {pe}")
+        for search in tqdm(CONFIGURATIONS):
+            batch_size, lr, epochs, fusion, attention_heads, h_dim, pe, mf_type = search
+            print(f"Running grid search with the following parameters:")
+            print(f"Batch Size: {batch_size}")
+            print(f"Learning Rate: {lr}")
+            print(f"Epochs: {epochs}")
+            print(f"Fusion: {fusion}")
+            print(f"Attention Heads: {attention_heads}")
+            print(f"Hidden Dimensions: {h_dim}")
+            print(f"Audio Positional Encoding: {pe}")
+            print(f"Middle Fusion Type: {mf_type}")
+            
 
-                args.epochs = epochs
-                config["learning_rate"] = lr
-                config['num_heads'] = attention_heads
-                config['audio_positional_encoding'] = pe
-                config['fusion'] = fusion
-                config['hidden_layers'] = h_dim
-                args.batch_size = batch_size
+            hyperparameters = {
+                'model_name': config['model_name'],
+                'backbone': config['backbone'],
+                'training_datasets': config['training_datasets'],  # DeepfakeTIMIT, RAVDESS, Forensics++, DFDC, FakeAVCeleb
+                'eval_datasets': config['eval_datasets'],
+                'task': config['task'],  # deepfake, emotion
+                'temporal_reduction': config['temporal_reduction'],
+                'learning_rate': lr,
+                'seq_mean_pool': config['seq_mean_pool'],
+                'finetune': config['finetune'],
+                'ir_layers': config['ir_layers'],
+                'num_heads': attention_heads,
+                'temporal_axis': config['temporal_axis'],
+                'fusion': fusion,
+                'audio_positional_encoding': config['audio_positional_encoding'],
+                'hidden_layers': h_dim,
+                'lp_only': config['lp_only'],
+                'audio_backbone': config['audio_backbone'],  # MFCC, eat, xvectors, resnet, emotion2vec
+                'middle_fusion_type': mf_type,  # default, audio_refuse, video_refuse, self_attention, multi_attention, self_cross_attention
+                'modality_dropout': config['modality_dropout'],
+                'video_backbone': config['video_backbone'],  # marlin, efficientface
+                'audio_only': config['audio_only']
+            }
 
-                ckpt, dm = train(args, config)
-                auc, acc = eval_dataset(args, ckpt, dm)
-                results.append({
-                    "batch_size": batch_size,
-                    "learning_rate": lr,
-                    "epochs": epochs,
-                    "fusion": fusion,
-                    "attention_heads": attention_heads,
-                    "hidden_dimensions": h_dim,
-                    "audio_positional_encoding": pe,
-                    "auc": auc,
-                    "acc": acc
-                })
+            file_path = 'config/grid.yaml'
 
-        except Exception:
-            print("Saving results to ", outfile)
+            with open(file_path, 'w') as file:
+                yaml.dump(hyperparameters, file, default_flow_style=False)
+                
+            command = [
+                'python', 'evaluate.py',
+                '--config', file_path,
+                '--data_path', args.data_path,
+                '--num_workers', args.num_workers,
+                '--batch_size', batch_size,
+                '--marlin_ckpt', args.marlin_ckpt,
+                '--epochs', epochs
+            ]
+
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+
+            if stderr:
+                print("Error:", stderr)
+
+            try:
+                lines = stdout.splitlines()
+                result_line = next(line for line in reversed(lines) if line.startswith('{') and line.endswith('}'))
+                results_run = json.loads(result_line.replace('\'', '"'))  # Replacing single quotes with double quotes for valid JSON
+                print("Results:", results_run)
+            except (StopIteration, json.JSONDecodeError) as e:
+                print("Failed to parse results:", e)
+
+            results.append({
+                "batch_size": batch_size,
+                "learning_rate": lr,
+                "epochs": epochs,
+                "fusion": fusion,
+                "attention_heads": attention_heads,
+                "hidden_dimensions": h_dim,
+                "audio_positional_encoding": pe,
+                "auc": results_run["auc"],
+                "acc": results_run["acc"]
+            })
+
         results.sort(key=lambda x: x['auc'], reverse=True)
-        results.sort(key=lambda x: x['auc'], reverse=True)
+        # results.sort(key=lambda x: x['auc'], reverse=True)
         with open(outfile, "w", newline='') as f:
             fieldnames = ["batch_size", "learning_rate", "epochs", "fusion", 
                         "attention_heads", "hidden_dimensions", "audio_positional_encoding", "auc", "acc"]
@@ -241,15 +285,8 @@ def evaluate(args):
             writer.writeheader()
             for result in results:
                 writer.writerow(result)
-        # with open(outfile, "w") as f:
-        #     f.write("batch_size\tlearning_rate\tepochs\tfusion\tattention_heads\thidden_dimensions\taudio_positional_encoding\tauc\tacc\n")
-        #     for result in results:
-        #         f.write(f"{result['batch_size']}\t{result['learning_rate']}\t{result['epochs']}\t{result['fusion']}\t{result['attention_heads']}\t{result['hidden_dimensions']}\t{result['audio_positional_encoding']}\t{result['auc']}\t{result['acc']}\n")
     else:
-        
         ckpt, dm = train(args, config)
-        # print(f"ckpt: {ckpt}, dm: {dm}")
-        # print(ckpt)
         eval_dataset(args, ckpt, dm)
 
 
